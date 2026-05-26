@@ -1,0 +1,3450 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eriks Pallpacknings-Kalkylator 3000</title>
+  <link rel="icon" type="image/png" href="data:image/png;base64,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" />
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg: #0b1020; --panel: #11162a; --text: #e8ebff; --sub: #a9b0d6; --accent: #6aa6ff;
+      --ok: #66d19e; --warn: #ffb86b; --danger: #ff6b6b;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0; padding: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: #0b1020;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 410px 1fr;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #212a4f;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 10;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      font-size: 17px;
+      margin: 0 0 4px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .app-version {
+      margin: -2px 0 8px;
+      font-size: 11px;
+      color: var(--sub);
+      letter-spacing: 0.35px;
+    }
+
+    .field { margin-bottom: 12px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--sub);
+      margin-bottom: 4px;
+    }
+
+    input[type="number"], input[type="range"], textarea, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #2a3560;
+      background: #0b1130;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    input[type="range"] {
+      padding: 0;
+      cursor: pointer;
+      height: 4px;
+      margin-top: 8px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      line-height: 1.4;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-group input[type="number"] {
+      width: 70px;
+      text-align: center;
+    }
+
+    .mode-title {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--sub);
+      margin-bottom: 6px;
+    }
+
+    .mode-tabs {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid #2a3560;
+      background: #0b1130;
+      overflow: hidden;
+    }
+
+    .mode-tabs input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-tabs label {
+      position: relative;
+      z-index: 2;
+      margin: 0;
+      padding: 8px 10px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--sub);
+      text-transform: none;
+      letter-spacing: 0;
+      transition: color 0.2s ease, font-weight 0.2s ease;
+      user-select: none;
+    }
+
+    .mode-tabs input:checked + label {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .mode-pill {
+      position: absolute;
+      z-index: 1;
+      top: 4px;
+      left: 4px;
+      width: calc(50% - 4px);
+      height: calc(100% - 8px);
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 2px 10px rgba(106,166,255,0.25);
+      transition: transform 0.2s ease;
+    }
+
+    #modeImport:checked ~ .mode-pill {
+      transform: translateX(100%);
+    }
+
+    .pallet-row-header,
+    .pallet-row {
+      display: grid;
+      grid-template-columns: 42px minmax(46px, 1fr) minmax(46px, 1fr) minmax(46px, 1fr) 52px 36px 32px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .pallet-row-header {
+      margin-bottom: 5px;
+      padding: 0 1px;
+      color: var(--sub);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.35px;
+    }
+
+    .pallet-rows {
+      display: grid;
+      gap: 6px;
+    }
+
+    .pallet-row input {
+      padding: 7px 6px;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .rotation-lock-cell {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid #2a3560;
+      background: #0b1130;
+      cursor: pointer;
+    }
+
+    .rotation-lock-cell input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .icon-button {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid #2a3560;
+      background: #0b1130;
+      color: var(--sub);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .icon-button:hover {
+      color: #fff;
+      border-color: var(--danger);
+      background: rgba(255, 107, 107, 0.12);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .primary-button,
+    .secondary-button {
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #2a3560;
+    }
+
+    .primary-button {
+      background: var(--accent);
+      color: #061026;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    .secondary-button {
+      background: #0b1130;
+      color: var(--text);
+    }
+
+    .primary-button:hover,
+    .secondary-button:hover {
+      filter: brightness(1.08);
+    }
+
+    .import-box {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #222c58;
+    }
+
+    .csv-format-note {
+      margin-top: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break: break-word;
+    }
+
+    .stats {
+      background: #0f1430;
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid #222c58;
+      display: grid;
+      gap: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      gap: 10px;
+    }
+
+    .stat-row.main {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #222c58;
+      margin-bottom: 4px;
+    }
+
+    .stat-row span:first-child { color: var(--sub); }
+
+    .stat-row span:last-child {
+      text-align: right;
+    }
+
+    .note {
+      font-size: 11px;
+      color: var(--sub);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    .warning { color: var(--warn); }
+    .success { color: var(--ok); }
+
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1a2035 0%, #0b1020 100%);
+    }
+
+    #canvas-container canvas {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      z-index: 1;
+    }
+
+    #canvas-container canvas,
+    .overlay-info {
+      transition: filter 0.2s ease, opacity 0.2s ease;
+    }
+
+    #canvas-container.is-calculating canvas {
+      filter: grayscale(1) brightness(0.48);
+    }
+
+    #canvas-container.is-calculating .overlay-info {
+      filter: grayscale(1);
+      opacity: 0.45;
+    }
+
+    .equipment-menu {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 45;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(11, 16, 32, 0.88);
+      border: 1px solid #2a3560;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    }
+
+    .equipment-menu label {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .equipment-menu select {
+      width: auto;
+      min-width: 132px;
+      padding: 6px 28px 6px 9px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .hidden-toggle {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: rgba(11, 16, 32, 0.88);
+      color: var(--text);
+      border: 1px solid #2a3560;
+      padding: 8px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 40;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    }
+
+    .hidden-toggle:hover {
+      background: rgba(106,166,255,0.14);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .hidden-toggle.active {
+      color: var(--ok);
+      border-color: var(--ok);
+      background: rgba(102, 209, 158, 0.14);
+    }
+
+    .overlay-info {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(11, 16, 32, 0.8);
+      padding: 10px 15px;
+      border-radius: 8px;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 12px;
+      color: var(--sub);
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(11, 16, 32, 0.55);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    .loading-card {
+      width: min(360px, calc(100% - 40px));
+      padding: 16px;
+      border-radius: 10px;
+      background: rgba(15, 20, 48, 0.92);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.35);
+    }
+
+    .loading-title {
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .loading-bar {
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #0b1130;
+      border: 1px solid #2a3560;
+    }
+
+    .loading-bar-fill {
+      width: 42%;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+      animation: loadingSlide 1s ease-in-out infinite;
+    }
+
+    @keyframes loadingSlide {
+      0% { transform: translateX(-110%); }
+      100% { transform: translateX(260%); }
+    }
+
+    .color-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .rotate-pallet-button {
+      position: absolute;
+      z-index: 55;
+      display: none;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      background: rgba(106,166,255,0.96);
+      color: #061026;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .rotate-pallet-button.is-visible {
+      display: block;
+    }
+
+    @media (max-width: 800px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .sidebar {
+        max-height: 390px;
+        border-right: none;
+        border-bottom: 1px solid #212a4f;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h1>📦Eriks Pallpacknings-Kalkylator 3000</h1>
+    <div class="app-version">Version 6.3.3</div>
+
+    <div class="input-panel">
+      <div class="field">
+        <label>Pallrader</label>
+
+        <div class="pallet-row-header">
+          <span>Antal</span>
+          <span>Längd</span>
+          <span>Bredd</span>
+          <span>Höjd</span>
+          <span>Vikt</span>
+          <span title="Lås rotation">Lås</span>
+          <span></span>
+        </div>
+
+        <div id="palletRows" class="pallet-rows"></div>
+
+        <div class="action-row">
+          <button id="addPalletRow" class="secondary-button" type="button">+ Lägg till rad</button>
+          <button id="exportCsvBtn" class="secondary-button" type="button">Exportera CSV</button>
+          <button id="importCsvBtn" class="secondary-button" type="button">Importera CSV</button>
+          <input id="csvFileInput" type="file" accept=".csv,text/csv" hidden>
+        </div>
+      </div>
+
+      <div class="field import-box">
+        <label>Importera från text</label>
+        <textarea id="palletImport" placeholder="(l,b,h)
+//
+(l,b,h,v)
+"></textarea>
+
+        <div class="action-row">
+          <button id="importPalletsBtn" class="primary-button" type="button">Importera text</button>
+        </div>
+
+        <div class="note csv-format-note">CSV: equipment_mode,stackable,layers,count,length_cm,width_cm,height_cm,weight_kg,lock_rotation</div>
+        <div id="importMsg" class="note"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Stapelbart?</label>
+        <div style="display:flex; align-items:center; gap:8px; background:#0b1130; padding:6px; border-radius:6px; border:1px solid #2a3560;">
+          <input id="stack" type="checkbox" style="width:auto; margin:0;">
+          <span style="font-size:12px; color:white;">Ja</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Antal lager</label>
+        <input id="layers" type="number" value="2" min="1" max="10" disabled>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-row main">
+        <span>Behov:</span>
+        <span id="reqText">-</span>
+      </div>
+      <div id="cap40HCRow" class="stat-row">
+        <span id="cap40HCLabel">Kapacitet 40' HC:</span>
+        <span id="cap40HC">-</span>
+      </div>
+      <div id="cap40Row" class="stat-row">
+        <span id="cap40Label">Kapacitet 40':</span>
+        <span id="cap40">-</span>
+      </div>
+      <div id="cap20Row" class="stat-row">
+        <span id="cap20Label">Kapacitet 20':</span>
+        <span id="cap20">-</span>
+      </div>
+      <div class="stat-row">
+        <span>Volym (m³):</span>
+        <span id="volTotal">-</span>
+      </div>
+    </div>
+
+    <div id="msgBox" class="note"></div>
+  </div>
+
+  <div id="canvas-container">
+    <div class="equipment-menu">
+      <label for="equipmentMode">Containertyp</label>
+      <select id="equipmentMode">
+        <option value="dry">Dry van</option>
+        <option value="openTop">Open top</option>
+        <option value="flatRack">Flat rack</option>
+      </select>
+    </div>
+    <button id="toggleCam" class="hidden-toggle">Cam Locked</button>
+    <button id="rotatePalletBtn" class="rotate-pallet-button" type="button" hidden>↻ Rotera pall</button>
+    <div id="loadingOverlay" class="loading-overlay" hidden>
+      <div class="loading-card">
+        <div class="loading-title">Beräknar packning...</div>
+        <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+      </div>
+    </div>
+    <div class="overlay-info">
+      <div><span class="color-dot" style="background:#4a9eff"></span>Längd (A)</div>
+      <div style="margin-top:4px"><span class="color-dot" style="background:#7bd89c"></span>Bredd (B)</div>
+      <div style="margin-top:4px"><span class="color-dot" style="background:#c28a55"></span><span id="dimensionLegendLabel">Dörrmått</span></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const CAM_CONFIG = {
+      distanceMult: 1.2,
+      xAngleMult: 0.8,
+      yAngleMult: 0.6,
+      zAngleMult: 0.9,
+      shiftX: 0,
+      shiftY: -100,
+      shiftZ: -40,
+    };
+
+    const ROOFLESS_CALC_HEIGHT = 10000;
+
+    const CONTAINERS = {
+      '20': {
+        type: '20',
+        family: 'dry',
+        label: "20'",
+        L: 590,
+        W: 235,
+        H: 239,
+        doorH: 228,
+        doorW: 235
+      },
+      '40': {
+        type: '40',
+        family: 'dry',
+        label: "40'",
+        L: 1203,
+        W: 235,
+        H: 239,
+        doorH: 228,
+        doorW: 235
+      },
+      '40HC': {
+        type: '40HC',
+        family: 'dry',
+        label: "40' HC",
+        L: 1203,
+        W: 235,
+        H: 269,
+        doorH: 258,
+        doorW: 235
+      },
+      '20OT': {
+        type: '20OT',
+        family: 'openTop',
+        label: "20' OT",
+        L: 590,
+        W: 235,
+        H: 234,
+        doorH: 228,
+        doorW: 234,
+        roofOpenL: 534,
+        roofOpenW: 223,
+        roofless: true,
+        topLoad: true
+      },
+      '40OT': {
+        type: '40OT',
+        family: 'openTop',
+        label: "40' OT",
+        L: 1203,
+        W: 235,
+        H: 234,
+        doorH: 228,
+        doorW: 234,
+        roofOpenL: 1155,
+        roofOpenW: 223,
+        roofless: true,
+        topLoad: true
+      },
+      '20FR': {
+        type: '20FR',
+        family: 'flatRack',
+        label: "20' FR",
+        L: 570,
+        W: 236,
+        H: 224,
+        doorH: Infinity,
+        doorW: Infinity,
+        roofless: true,
+        openSides: true,
+        noDoor: true,
+        flatRack: true
+      },
+      '40FR': {
+        type: '40FR',
+        family: 'flatRack',
+        label: "40' FR",
+        L: 1166,
+        W: 237,
+        H: 228,
+        doorH: Infinity,
+        doorW: Infinity,
+        roofless: true,
+        openSides: true,
+        noDoor: true,
+        flatRack: true
+      },
+    };
+
+    const EQUIPMENT_MODES = {
+      dry: {
+        label: 'Dry van',
+        types: ['20', '40', '40HC'],
+        displayOrder: ['40HC', '40', '20'],
+        capacitySlots: ['40HC', '40', '20'],
+        legend: 'Dörrmått',
+        note: "Dry van: dörr- och takhöjd används som hårda gränser."
+      },
+      openTop: {
+        label: 'Open top',
+        types: ['20OT', '40OT'],
+        displayOrder: ['40OT', '20OT'],
+        capacitySlots: ['40OT', '20OT'],
+        legend: 'Dörr/toppmått',
+        note: 'Open top: toppöppning används när gods inte kan gå genom dörren; överhöjd markeras.'
+      },
+      flatRack: {
+        label: 'Flat rack',
+        types: ['20FR', '40FR'],
+        displayOrder: ['40FR', '20FR'],
+        capacitySlots: ['40FR', '20FR'],
+        legend: 'Flakmått',
+        note: 'Flat rack: in-gauge-logik som prioriteras först.'
+      }
+    };
+
+    function getEquipmentMode() {
+      return els?.equipmentMode?.value || 'dry';
+    }
+
+    function getModeConfig(mode = getEquipmentMode()) {
+      return EQUIPMENT_MODES[mode] || EQUIPMENT_MODES.dry;
+    }
+
+    function getContainerOrder(mode = getEquipmentMode()) {
+      return getModeConfig(mode).types;
+    }
+
+    function getContainerDisplayOrder(mode = getEquipmentMode()) {
+      return getModeConfig(mode).displayOrder;
+    }
+
+    function getLargestContainerType(mode = getEquipmentMode()) {
+      const types = getContainerOrder(mode);
+      return types[types.length - 1] || '20';
+    }
+
+    function getSingleCapacityTypes(mode = getEquipmentMode()) {
+      return getModeConfig(mode).capacitySlots;
+    }
+
+    function formatContainerType(type) {
+      return CONTAINERS[type]?.label || type;
+    }
+
+    function countContainersByType(bins) {
+      const counts = Object.fromEntries(Object.keys(CONTAINERS).map(type => [type, 0]));
+
+      for (const bin of bins) {
+        counts[bin.type] = (counts[bin.type] || 0) + 1;
+      }
+
+      return counts;
+    }
+
+    function formatContainerCounts(bins, mode = getEquipmentMode()) {
+      const counts = countContainersByType(bins);
+      const order = [
+        ...getContainerDisplayOrder(mode),
+        ...Object.keys(counts).filter(type => !getContainerDisplayOrder(mode).includes(type))
+      ];
+
+      const parts = order
+        .filter(type => counts[type] > 0)
+        .map(type => `${counts[type]}st ${formatContainerType(type)}`);
+
+      return parts.length ? parts.join(' + ') : '-';
+    }
+
+    function containerRank(type, mode = getEquipmentMode()) {
+      const idx = getContainerOrder(mode).indexOf(type);
+      return idx === -1 ? 999 : idx;
+    }
+
+    const els = {
+      palletImport: document.getElementById('palletImport'),
+      palletRows: document.getElementById('palletRows'),
+      addPalletRow: document.getElementById('addPalletRow'),
+      importPalletsBtn: document.getElementById('importPalletsBtn'),
+      exportCsvBtn: document.getElementById('exportCsvBtn'),
+      importCsvBtn: document.getElementById('importCsvBtn'),
+      csvFileInput: document.getElementById('csvFileInput'),
+      importMsg: document.getElementById('importMsg'),
+      equipmentMode: document.getElementById('equipmentMode'),
+      stack: document.getElementById('stack'),
+      layers: document.getElementById('layers'),
+      reqText: document.getElementById('reqText'),
+      cap40HCRow: document.getElementById('cap40HCRow'),
+      cap40Row: document.getElementById('cap40Row'),
+      cap20Row: document.getElementById('cap20Row'),
+      cap40HCLabel: document.getElementById('cap40HCLabel'),
+      cap40Label: document.getElementById('cap40Label'),
+      cap20Label: document.getElementById('cap20Label'),
+      cap40HC: document.getElementById('cap40HC'),
+      cap40: document.getElementById('cap40'),
+      cap20: document.getElementById('cap20'),
+      volTotal: document.getElementById('volTotal'),
+      msgBox: document.getElementById('msgBox'),
+      toggleCamBtn: document.getElementById('toggleCam'),
+      rotatePalletBtn: document.getElementById('rotatePalletBtn'),
+      loadingOverlay: document.getElementById('loadingOverlay'),
+      dimensionLegendLabel: document.getElementById('dimensionLegendLabel'),
+      container: document.getElementById('canvas-container')
+    };
+
+    const scene = new THREE.Scene();
+    const mainGroup = new THREE.Group();
+    scene.add(mainGroup);
+
+    const camera = new THREE.PerspectiveCamera(45, els.container.clientWidth / els.container.clientHeight, 1, 20000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(els.container.clientWidth, els.container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    els.container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enabled = false;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(500, 1000, 500);
+    scene.add(dirLight);
+
+    let freeCam = false;
+    let nextPalletRowId = 1;
+    let updateDelayTimer = null;
+    let updateJobId = 0;
+    const LONG_CALC_THRESHOLD = 20;
+    const LONG_CALC_DELAY_MS = 1000;
+    const MIN_LOADING_MS = 1000;
+    const singleCapacityCache = new Map();
+    let loadingVisibleSince = 0;
+    let loadingToken = 0;
+    let hideLoadingTimer = null;
+    let lastRenderedSolution = null;
+    let interactivePalletMeshes = [];
+    let hoveredPalletHit = null;
+    const raycaster = new THREE.Raycaster();
+    const pointerNdc = new THREE.Vector2();
+
+    els.toggleCamBtn.addEventListener('click', () => {
+      freeCam = !freeCam;
+      controls.enabled = freeCam;
+      els.toggleCamBtn.innerText = freeCam ? 'Cam Unlocked' : 'Cam Locked';
+      els.toggleCamBtn.classList.toggle('active', freeCam);
+      if (!freeCam) autoFitCamera();
+    });
+
+    [
+      els.layers,
+      els.equipmentMode
+    ].forEach(el => {
+      el.addEventListener('input', update);
+      el.addEventListener('change', update);
+    });
+
+    els.stack.addEventListener('change', () => {
+      els.layers.disabled = !els.stack.checked;
+      update();
+    });
+
+    els.addPalletRow.addEventListener('click', () => {
+      addPalletRow({ count: 1 }, true);
+      els.importMsg.innerHTML = 'Ny pallrad tillagd.';
+    });
+
+    els.importPalletsBtn.addEventListener('click', () => {
+      importTextToRows();
+    });
+
+    els.exportCsvBtn.addEventListener('click', () => {
+      exportConfigurationCsv();
+    });
+
+    els.importCsvBtn.addEventListener('click', () => {
+      els.csvFileInput.value = '';
+      els.csvFileInput.click();
+    });
+
+    els.csvFileInput.addEventListener('change', () => {
+      importConfigurationCsvFile();
+    });
+
+    renderer.domElement.addEventListener('pointermove', handlePalletPointerMove);
+    renderer.domElement.addEventListener('click', handlePalletCanvasClick);
+    renderer.domElement.addEventListener('mousemove', handlePalletPointerMove);
+    els.container.addEventListener('pointerleave', hideRotatePalletButton);
+    els.rotatePalletBtn.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    els.rotatePalletBtn.addEventListener('click', handleRotatePalletClick);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = els.container.clientWidth / els.container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(els.container.clientWidth, els.container.clientHeight);
+      autoFitCamera();
+    });
+
+    function createTextLabel(text, color = '#a9b0d6', scaleX = 350, scaleY = 45) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1024;
+      canvas.height = 128;
+
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(0, 0, 1024, 128);
+
+      ctx.font = 'bold 32px sans-serif';
+      ctx.fillStyle = color;
+      ctx.textAlign = 'left';
+      ctx.fillText(text, 10, 42);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(scaleX, scaleY, 1);
+      return sprite;
+    }
+
+    function clearSceneGroup() {
+      while (mainGroup.children.length > 0) mainGroup.remove(mainGroup.children[0]);
+    }
+
+    function createRowInput(field, value, placeholder, min = null) {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.dataset.field = field;
+      input.placeholder = placeholder;
+      input.value = value ?? '';
+
+      if (min !== null) input.min = min;
+
+      input.addEventListener('input', () => {
+        update();
+      });
+
+      input.addEventListener('change', () => {
+        update();
+      });
+
+      return input;
+    }
+
+    function createRotationLockInput(value = false) {
+      const label = document.createElement('label');
+      label.className = 'rotation-lock-cell';
+      label.title = 'Lås rotation för den här pallraden';
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.field = 'lockRotation';
+      input.checked = Boolean(value);
+      input.setAttribute('aria-label', 'Lås rotation');
+
+      input.addEventListener('change', () => {
+        update();
+      });
+
+      label.appendChild(input);
+      return label;
+    }
+
+    function findPalletRowElementById(rowId) {
+      return [...els.palletRows.querySelectorAll('.pallet-row')]
+        .find(row => row.dataset.rowId === String(rowId)) || null;
+    }
+
+    function parseRowCount(value) {
+      return Math.max(1, Math.floor(parseFloat(value) || 1));
+    }
+
+    function readPalletRowElement(rowEl) {
+      const countVal = rowEl.querySelector('[data-field="count"]')?.value;
+      const lVal = rowEl.querySelector('[data-field="L"]')?.value;
+      const wVal = rowEl.querySelector('[data-field="W"]')?.value;
+      const hVal = rowEl.querySelector('[data-field="H"]')?.value;
+      const weightVal = rowEl.querySelector('[data-field="weight"]')?.value;
+      const lockRotation = Boolean(rowEl.querySelector('[data-field="lockRotation"]')?.checked);
+
+      const count = parseRowCount(countVal);
+      const L = parseFloat(lVal);
+      const W = parseFloat(wVal);
+      const H = parseFloat(hVal);
+      const weight = weightVal === '' ? '' : parseFloat(weightVal);
+
+      return {
+        rowId: rowEl.dataset.rowId,
+        count,
+        L,
+        W,
+        H,
+        weight: Number.isFinite(weight) ? weight : '',
+        lockRotation,
+        isValid: Number.isFinite(L) && Number.isFinite(W) && Number.isFinite(H) && L > 0 && W > 0 && H > 0
+      };
+    }
+
+    function setPalletRowFieldValue(rowEl, field, value) {
+      const input = rowEl.querySelector(`[data-field="${field}"]`);
+      if (!input) return;
+      input.value = value ?? '';
+    }
+
+    function setPalletRowRotationLock(rowEl, checked) {
+      const input = rowEl.querySelector('[data-field="lockRotation"]');
+      if (!input) return;
+      input.checked = Boolean(checked);
+    }
+
+    function formatNumberForRowInput(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return '';
+      return Math.abs(number - Math.round(number)) < 1e-9
+        ? String(Math.round(number))
+        : String(Number(number.toFixed(3)));
+    }
+
+    function addPalletRow(data = {}, shouldUpdate = true, insertAfterEl = null) {
+      const row = document.createElement('div');
+      row.className = 'pallet-row';
+      row.dataset.rowId = String(nextPalletRowId++);
+
+      const countInput = createRowInput('count', data.count ?? 1, '1', 1);
+      const lengthInput = createRowInput('L', data.L ?? '', '120', 1);
+      const widthInput = createRowInput('W', data.W ?? '', '80', 1);
+      const heightInput = createRowInput('H', data.H ?? '', '100', 1);
+      const weightInput = createRowInput('weight', data.weight ?? '', '-', 0);
+      const lockRotationInput = createRotationLockInput(data.lockRotation ?? false);
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'icon-button';
+      removeButton.title = 'Ta bort rad';
+      removeButton.textContent = '×';
+
+      removeButton.addEventListener('click', () => {
+        row.remove();
+
+        if (els.palletRows.children.length === 0) {
+          addPalletRow({ count: 1 }, false);
+        }
+
+        update();
+      });
+
+      row.appendChild(countInput);
+      row.appendChild(lengthInput);
+      row.appendChild(widthInput);
+      row.appendChild(heightInput);
+      row.appendChild(weightInput);
+      row.appendChild(lockRotationInput);
+      row.appendChild(removeButton);
+
+      if (insertAfterEl?.parentNode === els.palletRows) {
+        els.palletRows.insertBefore(row, insertAfterEl.nextSibling);
+      } else {
+        els.palletRows.appendChild(row);
+      }
+
+      if (shouldUpdate) {
+        update();
+      }
+
+      return row;
+    }
+
+    function clearPalletRows() {
+      while (els.palletRows.firstChild) {
+        els.palletRows.removeChild(els.palletRows.firstChild);
+      }
+    }
+
+    function readPalletRowDefinitions() {
+      const rows = [];
+
+      [...els.palletRows.querySelectorAll('.pallet-row')].forEach((rowEl, rowIndex) => {
+        const rowData = readPalletRowElement(rowEl);
+
+        if (rowData.isValid) {
+          rows.push({
+            rowId: rowData.rowId,
+            rowIndex,
+            count: rowData.count,
+            L: rowData.L,
+            W: rowData.W,
+            H: rowData.H,
+            weight: rowData.weight,
+            lockRotation: rowData.lockRotation
+          });
+        }
+      });
+
+      return rows;
+    }
+
+    function buildPalletsFromRowDefinitions(rowDefinitions) {
+      const pallets = [];
+      let nextId = 1;
+
+      rowDefinitions.forEach((row, rowIndex) => {
+        for (let i = 0; i < row.count; i++) {
+          pallets.push({
+            id: nextId++,
+            L: row.L,
+            W: row.W,
+            H: row.H,
+            weight: row.weight,
+            lockRotation: Boolean(row.lockRotation),
+            sourceRowId: row.rowId,
+            sourceRowIndex: rowIndex,
+            sourceInstanceIndex: i + 1
+          });
+        }
+      });
+
+      return pallets;
+    }
+
+    function parseImportedPalletRows(text) {
+      if (!text || !text.trim()) return [];
+
+      const rows = [];
+      const regex = /\(([^)]+)\)/g;
+      let match;
+
+      while ((match = regex.exec(text)) !== null) {
+        const rawParts = match[1].split(',').map(v => v.trim());
+
+        // Tillåt bara exakt dessa två importformat:
+        // (längd, bredd, höjd)
+        // (längd, bredd, höjd, vikt)
+        if (rawParts.length !== 3 && rawParts.length !== 4) continue;
+
+        const parts = rawParts.map(v => v === '' ? NaN : parseFloat(v));
+        if (!parts.every(Number.isFinite)) continue;
+
+        const [L, W, H, parsedWeight] = parts;
+        const weight = rawParts.length === 4 ? parsedWeight : '';
+
+        if (L > 0 && W > 0 && H > 0) {
+          rows.push({
+            count: 1,
+            L,
+            W,
+            H,
+            weight: Number.isFinite(weight) ? weight : '',
+            lockRotation: false
+          });
+        }
+      }
+
+      return rows;
+    }
+
+    function compressPalletRowDefinitions(rows) {
+      const map = new Map();
+
+      for (const row of rows) {
+        const weightKey = row.weight === '' ? '' : String(row.weight);
+        const lockKey = row.lockRotation ? '1' : '0';
+        const key = `${row.L}|${row.W}|${row.H}|${weightKey}|${lockKey}`;
+
+        if (!map.has(key)) {
+          map.set(key, {
+            count: 0,
+            L: row.L,
+            W: row.W,
+            H: row.H,
+            weight: row.weight,
+            lockRotation: Boolean(row.lockRotation)
+          });
+        }
+
+        map.get(key).count += row.count;
+      }
+
+      return [...map.values()];
+    }
+
+    function importTextToRows() {
+      const parsed = compressPalletRowDefinitions(parseImportedPalletRows(els.palletImport.value));
+
+      if (!parsed.length) {
+        els.importMsg.innerHTML = '<span class="warning">Hittade inga giltiga pallrader. Använd formatet (längd,bredd,höjd) eller (längd,bredd,höjd,vikt).</span>';
+        return;
+      }
+
+      clearPalletRows();
+
+      parsed.forEach(row => {
+        addPalletRow(row, false);
+      });
+
+      const totalCount = parsed.reduce((sum, row) => sum + row.count, 0);
+      els.importMsg.innerHTML = `<span class="success">Importerade ${totalCount} pall(ar) till ${parsed.length} rad(er).</span>`;
+
+      update();
+    }
+
+
+    const CSV_COLUMNS = ['equipment_mode', 'stackable', 'layers', 'count', 'length_cm', 'width_cm', 'height_cm', 'weight_kg', 'lock_rotation'];
+
+    function escapeCsvValue(value) {
+      const text = String(value ?? '');
+
+      if (/[",\n\r]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+
+      return text;
+    }
+
+    function exportConfigurationCsv() {
+      const rows = readPalletRowDefinitions();
+      const stackable = els.stack.checked ? '1' : '0';
+      const layers = parseInt(els.layers.value, 10) || 1;
+      const equipmentMode = getEquipmentMode();
+      const csvRows = [CSV_COLUMNS];
+
+      rows.forEach(row => {
+        csvRows.push([
+          equipmentMode,
+          stackable,
+          layers,
+          row.count,
+          row.L,
+          row.W,
+          row.H,
+          row.weight === '' ? '' : row.weight,
+          row.lockRotation ? '1' : '0'
+        ]);
+      });
+
+      const csv = '\ufeff' + csvRows.map(row => row.map(escapeCsvValue).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+
+      link.href = url;
+      link.download = `pallkonfiguration-${stamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      els.importMsg.innerHTML = rows.length
+        ? `<span class="success">Exporterade ${rows.length} rad(er) till CSV.</span>`
+        : '<span class="warning">Exporterade bara CSV-rubriker eftersom inga giltiga pallrader finns.</span>';
+    }
+
+    function detectCsvDelimiter(text) {
+      const firstLine = text.split(/\r?\n/).find(line => line.trim()) || '';
+      const semicolons = (firstLine.match(/;/g) || []).length;
+      const commas = (firstLine.match(/,/g) || []).length;
+      return semicolons > commas ? ';' : ',';
+    }
+
+    function parseCsv(text) {
+      const delimiter = detectCsvDelimiter(text);
+      const rows = [];
+      let row = [];
+      let value = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            value += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+          continue;
+        }
+
+        if (char === delimiter && !inQuotes) {
+          row.push(value);
+          value = '';
+          continue;
+        }
+
+        if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && next === '\n') i++;
+          row.push(value);
+          rows.push(row);
+          row = [];
+          value = '';
+          continue;
+        }
+
+        value += char;
+      }
+
+      row.push(value);
+      rows.push(row);
+
+      return rows.filter(r => r.some(cell => String(cell).trim() !== ''));
+    }
+
+    function normalizeCsvHeader(value) {
+      const normalized = String(value ?? '')
+        .replace(/^\ufeff/, '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      const aliases = {
+        mode: 'equipment_mode',
+        equipment: 'equipment_mode',
+        equipmentmode: 'equipment_mode',
+        equipment_mode: 'equipment_mode',
+        container_mode: 'equipment_mode',
+        containertyp: 'equipment_mode',
+        container_type: 'equipment_mode',
+        stack: 'stackable',
+        stackable: 'stackable',
+        stapelbart: 'stackable',
+        layers: 'layers',
+        lager: 'layers',
+        antal_lager: 'layers',
+        count: 'count',
+        antal: 'count',
+        qty: 'count',
+        quantity: 'count',
+        l: 'length_cm',
+        length: 'length_cm',
+        length_cm: 'length_cm',
+        langd: 'length_cm',
+        w: 'width_cm',
+        width: 'width_cm',
+        width_cm: 'width_cm',
+        bredd: 'width_cm',
+        h: 'height_cm',
+        height: 'height_cm',
+        height_cm: 'height_cm',
+        hojd: 'height_cm',
+        weight: 'weight_kg',
+        weight_kg: 'weight_kg',
+        vikt: 'weight_kg',
+        vikt_kg: 'weight_kg',
+        lock: 'lock_rotation',
+        locked: 'lock_rotation',
+        lock_rotation: 'lock_rotation',
+        rotation_lock: 'lock_rotation',
+        rotation_locked: 'lock_rotation',
+        locked_rotation: 'lock_rotation',
+        las: 'lock_rotation',
+        las_rotation: 'lock_rotation',
+        lasrot: 'lock_rotation',
+        las_rotation_pall: 'lock_rotation'
+      };
+
+      return aliases[normalized] || normalized;
+    }
+
+    function parseCsvNumber(value) {
+      const text = String(value ?? '').trim();
+      if (!text) return NaN;
+      return parseFloat(text.replace(/\s/g, '').replace(',', '.'));
+    }
+
+    function parseCsvBoolean(value) {
+      return /^(1|true|yes|ja|j)$/i.test(String(value ?? '').trim());
+    }
+
+    function normalizeEquipmentModeValue(value) {
+      const normalized = String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '');
+
+      if (['dry', 'dryvan', 'container', 'standard'].includes(normalized)) return 'dry';
+      if (['opentop', 'ot', 'open'].includes(normalized)) return 'openTop';
+      if (['flatrack', 'flat', 'fr'].includes(normalized)) return 'flatRack';
+
+      return EQUIPMENT_MODES[value] ? value : null;
+    }
+
+    function importConfigurationCsvText(text) {
+      const rows = parseCsv(text);
+
+      if (rows.length < 2) {
+        els.importMsg.innerHTML = '<span class="warning">CSV-filen saknar datarader.</span>';
+        return;
+      }
+
+      const headers = rows[0].map(normalizeCsvHeader);
+      const indexOf = field => headers.indexOf(field);
+      const requiredFields = ['count', 'length_cm', 'width_cm', 'height_cm'];
+      const missing = requiredFields.filter(field => indexOf(field) === -1);
+
+      if (missing.length) {
+        els.importMsg.innerHTML = `<span class="warning">CSV saknar kolumn(er): ${missing.join(', ')}.</span>`;
+        return;
+      }
+
+      const importedRows = [];
+      let importedMode = null;
+      let importedStackable = null;
+      let importedLayers = null;
+
+      rows.slice(1).forEach(row => {
+        const read = field => {
+          const idx = indexOf(field);
+          return idx === -1 ? '' : row[idx];
+        };
+
+        const modeValue = normalizeEquipmentModeValue(read('equipment_mode'));
+        if (!importedMode && modeValue) importedMode = modeValue;
+
+        const stackValue = read('stackable');
+        if (importedStackable === null && String(stackValue).trim() !== '') {
+          importedStackable = parseCsvBoolean(stackValue);
+        }
+
+        const layerValue = parseInt(parseCsvNumber(read('layers')), 10);
+        if (importedLayers === null && Number.isFinite(layerValue) && layerValue > 0) {
+          importedLayers = layerValue;
+        }
+
+        const count = Math.max(1, Math.floor(parseCsvNumber(read('count')) || 1));
+        const L = parseCsvNumber(read('length_cm'));
+        const W = parseCsvNumber(read('width_cm'));
+        const H = parseCsvNumber(read('height_cm'));
+        const weight = parseCsvNumber(read('weight_kg'));
+        const lockRaw = read('lock_rotation');
+        const lockRotation = String(lockRaw).trim() === '' ? false : parseCsvBoolean(lockRaw);
+
+        if (Number.isFinite(L) && Number.isFinite(W) && Number.isFinite(H) && L > 0 && W > 0 && H > 0) {
+          importedRows.push({
+            count,
+            L,
+            W,
+            H,
+            weight: Number.isFinite(weight) ? weight : '',
+            lockRotation
+          });
+        }
+      });
+
+      if (!importedRows.length) {
+        els.importMsg.innerHTML = '<span class="warning">Hittade inga giltiga pallrader i CSV-filen.</span>';
+        return;
+      }
+
+      if (importedMode) {
+        els.equipmentMode.value = importedMode;
+      }
+
+      if (importedStackable !== null) {
+        els.stack.checked = importedStackable;
+        els.layers.disabled = !importedStackable;
+      }
+
+      if (importedLayers !== null) {
+        els.layers.value = importedLayers;
+      }
+
+      clearPalletRows();
+      importedRows.forEach(row => addPalletRow(row, false));
+
+      const totalCount = importedRows.reduce((sum, row) => sum + row.count, 0);
+      els.importMsg.innerHTML = `<span class="success">Importerade ${totalCount} pall(ar) från CSV (${importedRows.length} rad(er)).</span>`;
+      update();
+    }
+
+    function importConfigurationCsvFile() {
+      const file = els.csvFileInput.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        importConfigurationCsvText(String(reader.result || ''));
+      };
+
+      reader.onerror = () => {
+        els.importMsg.innerHTML = '<span class="warning">Kunde inte läsa CSV-filen.</span>';
+      };
+
+      reader.readAsText(file);
+    }
+
+    function totalVolumeOfPallets(pallets) {
+      return pallets.reduce((sum, p) => sum + (p.L * p.W * p.H), 0) / 1000000;
+    }
+
+    function lexicographicallyBetter(a, b) {
+      if (!b) return true;
+      const len = Math.max(a.length, b.length);
+
+      for (let i = 0; i < len; i++) {
+        const av = a[i] ?? 0;
+        const bv = b[i] ?? 0;
+        if (av < bv) return true;
+        if (av > bv) return false;
+      }
+
+      return false;
+    }
+
+    const EPS = 1e-6;
+
+    function getWantedLayers() {
+      return els.stack.checked ? (parseInt(els.layers.value, 10) || 1) : 1;
+    }
+
+    function getAllowedLayersForHeight(palletHeight, wantedLayers, container = CONTAINERS['40']) {
+      if (wantedLayers <= 1) return 1;
+
+      if (container.roofless || container.openSides) {
+        return Math.max(1, wantedLayers);
+      }
+
+      const byDoor = Math.floor((container.doorH ?? container.H) / palletHeight);
+      const byRoof = Math.floor(container.H / palletHeight);
+      const maxPhysical = Math.max(1, Math.min(byDoor, byRoof));
+      return Math.max(1, Math.min(wantedLayers, maxPhysical));
+    }
+
+    function getContainerHeightLimit(box) {
+      return (box.roofless || box.openSides) ? ROOFLESS_CALC_HEIGHT : box.H;
+    }
+
+    function canItemEnterContainer(box, item, L, W) {
+      if (box.noDoor || box.openSides) return true;
+
+      const fitsDoor =
+        W <= (box.doorW ?? box.W) + 1e-6 &&
+        item.H <= (box.doorH ?? box.H) + 1e-6;
+
+      if (fitsDoor) return true;
+
+      if (box.topLoad) {
+        return (
+          L <= (box.roofOpenL ?? box.L) + 1e-6 &&
+          W <= (box.roofOpenW ?? box.W) + 1e-6
+        );
+      }
+
+      return false;
+    }
+
+    function getItemOrientations(item) {
+      const orientations = [
+        { L: item.L, W: item.W, kind: 'A' }
+      ];
+
+      if (!item.lockRotation && Math.abs(item.L - item.W) > EPS) {
+        orientations.push({ L: item.W, W: item.L, kind: 'B' });
+      }
+
+      return orientations;
+    }
+
+    function isFlatRackOverWidth(box, W) {
+      return Boolean(box.flatRack) && W > box.W + EPS;
+    }
+
+    function flatRackItemHasInGaugeOrientation(box, item) {
+      if (!box.flatRack) return false;
+
+      return getItemOrientations(item).some(opt => (
+        opt.L <= box.L + EPS &&
+        opt.W <= box.W + EPS &&
+        item.H <= getContainerHeightLimit(box) + EPS &&
+        canItemEnterContainer(box, item, opt.L, opt.W)
+      ));
+    }
+
+    function flatRackItemHasInGaugeOrientationInMode(item, mode = getEquipmentMode()) {
+      return getContainerOrder(mode).some(type => flatRackItemHasInGaugeOrientation(CONTAINERS[type], item));
+    }
+
+    function flatRackOrientationAllowed(box, item, L, W, options = {}) {
+      if (!box.flatRack) return W <= box.W + EPS;
+      if (W <= box.W + EPS) return true;
+      if (options.allowFlatRackOverWidth) return true;
+
+      // Automatiken får bara använda out-of-gauge-bredd när pallen inte kan
+      // gå in-gauge i någon rotation i någon vald flat-rack-storlek.
+      // Exempel: 200x300 cm ska automatiskt läggas som 300x200 cm i stället
+      // för att sticka ut över långsidorna.
+      return !flatRackItemHasInGaugeOrientationInMode(item, getEquipmentMode());
+    }
+
+    function getPlacementYForOrientation(box, desiredY, W) {
+      return isFlatRackOverWidth(box, W) ? (box.W - W) / 2 : desiredY;
+    }
+
+    function placementOverWidthAmount(placement, box) {
+      if (!box.flatRack) return 0;
+      return Math.max(0, -placement.y, placement.y + placement.W - box.W, placement.W - box.W);
+    }
+
+    function placementExceedsNominalWidth(placement, box) {
+      return placementOverWidthAmount(placement, box) > EPS;
+    }
+
+    function canItemFitInEmptyContainerBox(box, item) {
+      return getItemOrientations(item).some(opt => (
+        opt.L <= box.L + EPS &&
+        item.H <= getContainerHeightLimit(box) + EPS &&
+        flatRackOrientationAllowed(box, item, opt.L, opt.W) &&
+        canItemEnterContainer(box, item, opt.L, opt.W)
+      ));
+    }
+
+    function groupImportedPallets(pallets) {
+      const map = new Map();
+
+      for (const p of pallets) {
+        const key = `${p.L}|${p.W}|${p.H}`;
+        if (!map.has(key)) {
+          map.set(key, { L: p.L, W: p.W, H: p.H, count: 0 });
+        }
+        map.get(key).count += 1;
+      }
+
+      return [...map.values()];
+    }
+
+    function buildItemsFromPallets(pallets) {
+      return pallets.map((p, idx) => ({
+        baseId: p.id ? `imp-${p.id}` : `item-${idx + 1}`,
+        L: p.L,
+        W: p.W,
+        H: p.H,
+        area: p.L * p.W,
+        volume: p.L * p.W * p.H,
+        lockRotation: Boolean(p.lockRotation),
+        sourceRowId: p.sourceRowId,
+        sourceRowIndex: p.sourceRowIndex,
+        sourceInstanceIndex: p.sourceInstanceIndex,
+        weight: p.weight
+      }));
+    }
+
+    function buildSingleItems(pL, pW, pH, count, options = {}) {
+      const items = [];
+      const lockRotation = Boolean(options.lockRotation);
+
+      for (let i = 0; i < count; i++) {
+        items.push({
+          baseId: `single-${i + 1}`,
+          L: pL,
+          W: pW,
+          H: pH,
+          area: pL * pW,
+          volume: pL * pW * pH,
+          lockRotation
+        });
+      }
+
+      return items;
+    }
+
+    function makeSeededRng(seed) {
+      let t = seed >>> 0;
+
+      return function() {
+        t += 0x6D2B79F5;
+        let x = t;
+        x = Math.imul(x ^ (x >>> 15), x | 1);
+        x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function getItemSeed(items) {
+      let seed = 2166136261;
+
+      for (const item of items) {
+        const str = `${item.baseId}|${item.L}|${item.W}|${item.H}`;
+
+        for (let i = 0; i < str.length; i++) {
+          seed ^= str.charCodeAt(i);
+          seed = Math.imul(seed, 16777619);
+        }
+      }
+
+      return seed >>> 0;
+    }
+
+    function buildCandidateOrders(items, rng, extraRandomOrders = 10) {
+      const orders = [];
+
+      orders.push([...items].sort((a, b) => b.volume - a.volume || b.area - a.area || b.H - a.H));
+      orders.push([...items].sort((a, b) => b.area - a.area || b.volume - a.volume || b.H - a.H));
+      orders.push([...items].sort((a, b) => Math.max(b.L, b.W, b.H) - Math.max(a.L, a.W, a.H) || b.volume - a.volume));
+      orders.push([...items].sort((a, b) => b.H - a.H || b.volume - a.volume || b.area - a.area));
+
+      for (let k = 0; k < extraRandomOrders; k++) {
+        const weighted = items.map(item => ({
+          item,
+          score:
+            item.volume * (0.8 + rng() * 0.5) +
+            item.area * (0.2 + rng() * 0.4) +
+            item.H * 40 * (0.3 + rng() * 0.4) +
+            Math.max(item.L, item.W) * (0.2 + rng() * 0.3)
+        }));
+
+        weighted.sort((a, b) => b.score - a.score);
+        const arr = weighted.map(v => v.item);
+
+        const swaps = Math.max(1, Math.floor(arr.length * 0.10));
+
+        for (let i = 0; i < swaps; i++) {
+          const a = Math.floor(rng() * arr.length);
+          const b = Math.floor(rng() * arr.length);
+          [arr[a], arr[b]] = [arr[b], arr[a]];
+        }
+
+        orders.push(arr);
+      }
+
+      return orders;
+    }
+
+    // -------------------------------
+    // RIKTIG 3D PACKNING
+    // EXTREME POINTS + OPEN BINS + LOKAL SÖK
+    // -------------------------------
+
+    function createEmptyBin(type) {
+      return {
+        type,
+        box: CONTAINERS[type],
+        placements: [],
+        items: [],
+        usedVolume: 0
+      };
+    }
+
+    function cloneBin(bin) {
+      return {
+        type: bin.type,
+        box: bin.box,
+        placements: bin.placements.map(p => ({ ...p })),
+        items: [...bin.items],
+        usedVolume: bin.usedVolume,
+        visualOnly: Boolean(bin.visualOnly),
+        overHeightWarning: Boolean(bin.overHeightWarning),
+        overWidthWarning: Boolean(bin.overWidthWarning)
+      };
+    }
+
+    function cloneSolution(solution) {
+      return {
+        type: solution.type,
+        mode: solution.mode,
+        bins: solution.bins.map(cloneBin),
+        unplaced: [...solution.unplaced]
+      };
+    }
+
+    function binVolume(bin) {
+      return bin.box.L * bin.box.W * bin.box.H;
+    }
+
+    function fillRatio(bin) {
+      const vol = binVolume(bin);
+      return vol > 0 ? bin.usedVolume / vol : 0;
+    }
+
+    function solutionPlacedUnits(solution) {
+      return solution.bins.reduce((sum, bin) => sum + bin.items.length, 0);
+    }
+
+    function boxesIntersect3D(a, b) {
+      return !(
+        a.x >= b.x + b.L ||
+        a.x + a.L <= b.x ||
+        a.y >= b.y + b.W ||
+        a.y + a.W <= b.y ||
+        a.z >= b.z + b.H ||
+        a.z + a.H <= b.z
+      );
+    }
+
+    function pointInsidePlacement(point, placement) {
+      return (
+        point.x >= placement.x && point.x < placement.x + placement.L &&
+        point.y >= placement.y && point.y < placement.y + placement.W &&
+        point.z >= placement.z && point.z < placement.z + placement.H
+      );
+    }
+
+    function findSupportingPlacement(bin, x, y, z, L, W) {
+      for (const p of bin.placements) {
+        if (Math.abs((p.z + p.H) - z) > 1e-6) continue;
+
+        if (
+          x >= p.x - 1e-6 &&
+          y >= p.y - 1e-6 &&
+          x + L <= p.x + p.L + 1e-6 &&
+          y + W <= p.y + p.W + 1e-6
+        ) {
+          return p;
+        }
+      }
+
+      return null;
+    }
+
+    function overlapLen(a1, a2, b1, b2) {
+      return Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
+    }
+
+    function overlapArea2D(ax1, ax2, ay1, ay2, bx1, bx2, by1, by2) {
+      return overlapLen(ax1, ax2, bx1, bx2) * overlapLen(ay1, ay2, by1, by2);
+    }
+
+    function contactScore3D(bin, placement) {
+      const { x, y, z, L, W, H } = placement;
+      const box = bin.box;
+      let score = 0;
+
+      if (x === 0 || x + L === box.L) score += W * H;
+      if (y === 0 || y + W === box.W) score += L * H;
+      if (z === 0) score += L * W;
+
+      for (const p of bin.placements) {
+        const yz = overlapArea2D(y, y + W, z, z + H, p.y, p.y + p.W, p.z, p.z + p.H);
+        const xz = overlapArea2D(x, x + L, z, z + H, p.x, p.x + p.L, p.z, p.z + p.H);
+        const xy = overlapArea2D(x, x + L, y, y + W, p.x, p.x + p.L, p.y, p.y + p.W);
+
+        if (x === p.x + p.L || x + L === p.x) score += yz;
+        if (y === p.y + p.W || y + W === p.y) score += xz;
+        if (z === p.z + p.H || z + H === p.z) score += xy;
+      }
+
+      return score;
+    }
+
+    function generateCandidatePoints(bin) {
+      const points = [{ x: 0, y: 0, z: 0 }];
+
+      for (const p of bin.placements) {
+        const top = p.z + p.H;
+
+        points.push(
+          { x: p.x + p.L, y: p.y, z: p.z },
+          { x: p.x, y: p.y + p.W, z: p.z },
+          { x: p.x + p.L, y: p.y + p.W, z: p.z },
+          { x: p.x, y: p.y, z: top },
+          { x: p.x + p.L, y: p.y, z: top },
+          { x: p.x, y: p.y + p.W, z: top },
+          { x: p.x + p.L, y: p.y + p.W, z: top }
+        );
+
+        if (bin.box.flatRack && placementExceedsNominalWidth(p, bin.box)) {
+          // Överbredda flat-rack-pallar är centrerade på flakets breddlinje.
+          // Lägg därför också till kandidatpunkter med normaliserad y=0,
+          // annars försvinner nästa längdposition när p.y är negativ.
+          points.push(
+            { x: p.x + p.L, y: 0, z: p.z },
+            { x: p.x + p.L, y: 0, z: top },
+            { x: p.x, y: 0, z: top }
+          );
+        }
+      }
+
+      const out = [];
+      const seen = new Set();
+
+      const heightLimit = getContainerHeightLimit(bin.box);
+
+      for (const pt of points) {
+        if (pt.x < 0 || pt.y < 0 || pt.z < 0) continue;
+        if (pt.x > bin.box.L || pt.y > bin.box.W || pt.z > heightLimit) continue;
+
+        const key = `${pt.x}|${pt.y}|${pt.z}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        let inside = false;
+
+        for (const p of bin.placements) {
+          if (pointInsidePlacement(pt, p)) {
+            inside = true;
+            break;
+          }
+        }
+
+        if (!inside) out.push(pt);
+      }
+
+      out.sort((a, b) => a.z - b.z || a.x - b.x || a.y - b.y);
+      return out;
+    }
+
+    function canPlaceInBin(bin, item, x, y, z, L, W, wantedLayers, options = {}) {
+      const box = bin.box;
+      const heightLimit = getContainerHeightLimit(box);
+      const overWidth = isFlatRackOverWidth(box, W);
+
+      if (L > box.L + EPS || item.H > heightLimit + EPS) return null;
+      if (!flatRackOrientationAllowed(box, item, L, W, options)) return null;
+      if (!canItemEnterContainer(box, item, L, W)) return null;
+      if (x < -EPS || z < -EPS) return null;
+      if (x + L > box.L + EPS || z + item.H > heightLimit + EPS) return null;
+
+      if (overWidth) {
+        const centeredY = (box.W - W) / 2;
+        if (Math.abs(y - centeredY) > EPS) return null;
+      } else {
+        if (y < -EPS || y + W > box.W + EPS) return null;
+      }
+
+      const probe = { x, y, z, L, W, H: item.H };
+
+      for (const p of bin.placements) {
+        if (options.ignorePlacement && p === options.ignorePlacement) continue;
+        if (boxesIntersect3D(probe, p)) return null;
+      }
+
+      let support = null;
+      let layer = 1;
+
+      if (z > 0) {
+        support = findSupportingPlacement(bin, x, y, z, L, W);
+        if (!support) return null;
+        layer = (support.layer ?? 1) + 1;
+      }
+
+      const allowedLayers = getAllowedLayersForHeight(item.H, wantedLayers, box);
+      if (layer > allowedLayers) return null;
+
+      return { support, layer, overWidth };
+    }
+
+    function placementScore(bin, placement, heuristic) {
+      const remX = bin.box.L - (placement.x + placement.L);
+      const remY = bin.box.W - (placement.y + placement.W);
+      const remZ = bin.box.H - (placement.z + placement.H);
+      const contact = contactScore3D(bin, placement);
+      const floorPenalty = placement.z === 0 ? 0 : 1;
+      const overWidthPenalty = placementExceedsNominalWidth(placement, bin.box) ? 1 : 0;
+      const centeredYDistance = Math.abs((placement.y + placement.W / 2) - (bin.box.W / 2));
+
+      if (heuristic === 'BLF') {
+        return [overWidthPenalty, placement.z, placement.x, centeredYDistance, remY, remX, remZ, -contact];
+      }
+
+      if (heuristic === 'TIGHT') {
+        return [overWidthPenalty, placement.z, Math.min(Math.max(remX, 0), Math.max(remY, 0)), Math.max(remX, remY), remZ, -contact, placement.x, centeredYDistance];
+      }
+
+      if (heuristic === 'SUPPORT') {
+        return [overWidthPenalty, floorPenalty, placement.z, -contact, remZ, remX + Math.max(remY, 0), placement.x, centeredYDistance];
+      }
+
+      if (heuristic === 'WALL') {
+        return [overWidthPenalty, placement.z, -contact, Math.max(remY, 0), remX, remZ, placement.x, centeredYDistance];
+      }
+
+      return [overWidthPenalty, placement.z, placement.x, centeredYDistance, -contact];
+    }
+
+    function findBestPlacementInBin(bin, item, wantedLayers, heuristic) {
+      let best = null;
+      const points = generateCandidatePoints(bin);
+
+      const options = getItemOrientations(item);
+
+      for (const pt of points) {
+        for (const opt of options) {
+          const candidateY = getPlacementYForOrientation(bin.box, pt.y, opt.W);
+          const supportInfo = canPlaceInBin(bin, item, pt.x, candidateY, pt.z, opt.L, opt.W, wantedLayers);
+          if (!supportInfo) continue;
+
+          const placement = {
+            baseId: item.baseId,
+            x: pt.x,
+            y: candidateY,
+            z: pt.z,
+            L: opt.L,
+            W: opt.W,
+            H: item.H,
+            kind: opt.kind,
+            layer: supportInfo.layer,
+            supportId: supportInfo.support?.baseId ?? null,
+            isOverWidth: supportInfo.overWidth,
+            item
+          };
+
+          const score = placementScore(bin, placement, heuristic);
+
+          if (!best || lexicographicallyBetter(score, best.score)) {
+            best = { score, placement };
+          }
+        }
+      }
+
+      return best;
+    }
+
+    function placePlacementInBin(bin, placement) {
+      placement.isOverWidth = placementExceedsNominalWidth(placement, bin.box);
+      bin.placements.push(placement);
+      bin.items.push(placement.item);
+      bin.usedVolume += placement.item.volume;
+      bin.overWidthWarning = bin.overWidthWarning || placement.isOverWidth;
+      bin.overHeightWarning = bin.overHeightWarning || placementExceedsNominalHeight(placement, bin.box);
+    }
+
+    function betterCandidate(a, b, bins) {
+      if (!b) return true;
+      if (lexicographicallyBetter(a.score, b.score)) return true;
+      if (lexicographicallyBetter(b.score, a.score)) return false;
+
+      const fillA = fillRatio(bins[a.binIndex]);
+      const fillB = fillRatio(bins[b.binIndex]);
+
+      if (fillA !== fillB) return fillA > fillB;
+      return a.binIndex < b.binIndex;
+    }
+
+    function packIntoBins(initialBins, orderedItems, heuristic, type, wantedLayers, allowOpenNewBins = true) {
+      const bins = initialBins.map(cloneBin);
+      const unplaced = [];
+
+      for (const item of orderedItems) {
+        let best = null;
+
+        for (let i = 0; i < bins.length; i++) {
+          const found = findBestPlacementInBin(bins[i], item, wantedLayers, heuristic);
+
+          if (found) {
+            const cand = {
+              binIndex: i,
+              score: found.score,
+              placement: found.placement
+            };
+
+            if (betterCandidate(cand, best, bins)) best = cand;
+          }
+        }
+
+        if (best) {
+          placePlacementInBin(bins[best.binIndex], best.placement);
+          continue;
+        }
+
+        if (allowOpenNewBins) {
+          const newBin = createEmptyBin(type);
+          const found = findBestPlacementInBin(newBin, item, wantedLayers, heuristic);
+
+          if (found) {
+            placePlacementInBin(newBin, found.placement);
+            bins.push(newBin);
+          } else {
+            unplaced.push(item);
+          }
+        } else {
+          unplaced.push(item);
+        }
+      }
+
+      return { bins, unplaced, type, mode: getEquipmentMode() };
+    }
+
+    function binWidthWarningCount(bin) {
+      return bin.placements.filter(p => placementExceedsNominalWidth(p, bin.box)).length;
+    }
+
+    function binWidthOverflowAmount(bin) {
+      return bin.placements.reduce((sum, p) => sum + placementOverWidthAmount(p, bin.box), 0);
+    }
+
+    function solutionWidthWarningCount(solution) {
+      return solution.bins.reduce((sum, bin) => sum + binWidthWarningCount(bin), 0);
+    }
+
+    function solutionWidthOverflowAmount(solution) {
+      return solution.bins.reduce((sum, bin) => sum + binWidthOverflowAmount(bin), 0);
+    }
+
+    function solutionFillVector(solution) {
+      return solution.bins
+        .map(fillRatio)
+        .sort((a, b) => a - b);
+    }
+
+    function solutionSpreadMetric(solution) {
+      const fills = solution.bins.map(fillRatio);
+      if (!fills.length) return 0;
+      return fills.reduce((sum, f) => sum + f * f, 0);
+    }
+
+    function totalContainerRank(solution) {
+      return solution.bins.reduce((sum, bin) => sum + containerRank(bin.type, solution.mode || getEquipmentMode()), 0);
+    }
+
+    function isSolutionBetter(a, b, totalUnits) {
+      if (!b) return true;
+
+      const placedA = solutionPlacedUnits(a);
+      const placedB = solutionPlacedUnits(b);
+
+      if (placedA !== placedB) return placedA > placedB;
+
+      const widthWarningsA = solutionWidthWarningCount(a);
+      const widthWarningsB = solutionWidthWarningCount(b);
+      if (widthWarningsA !== widthWarningsB) return widthWarningsA < widthWarningsB;
+
+      const binsA = a.bins.length;
+      const binsB = b.bins.length;
+
+      if (placedA === totalUnits && placedB === totalUnits && binsA !== binsB) return binsA < binsB;
+      if (binsA !== binsB) return binsA < binsB;
+
+      if (a.unplaced.length !== b.unplaced.length) return a.unplaced.length < b.unplaced.length;
+
+      const rankA = totalContainerRank(a);
+      const rankB = totalContainerRank(b);
+      if (rankA !== rankB) return rankA < rankB;
+
+      // För flat rack ska 20' FR vinna över 40' FR när båda löser uppdraget
+      // med samma antal out-of-gauge-pallar. 40' FR är bara någon cm bredare,
+      // så överbreddens exakta cm-tal ska inte tvinga upp valet till 40' FR.
+      const widthOverflowA = solutionWidthOverflowAmount(a);
+      const widthOverflowB = solutionWidthOverflowAmount(b);
+      if (Math.abs(widthOverflowA - widthOverflowB) > EPS) return widthOverflowA < widthOverflowB;
+
+      const fillsA = solutionFillVector(a);
+      const fillsB = solutionFillVector(b);
+      const len = Math.max(fillsA.length, fillsB.length);
+
+      for (let i = len - 1; i >= 0; i--) {
+        const av = fillsA[i] ?? 0;
+        const bv = fillsB[i] ?? 0;
+        if (av !== bv) return av > bv;
+      }
+
+      return solutionSpreadMetric(a) > solutionSpreadMetric(b);
+    }
+
+    function bestSingleContainerPlan3D(type, items, wantedLayers, extraRandomOrders = 8) {
+      if (!items.length) {
+        return {
+          type,
+          placements: [],
+          items: [],
+          placedUnits: 0,
+          usedVolume: 0
+        };
+      }
+
+      const box = CONTAINERS[type];
+      const rng = makeSeededRng(getItemSeed(items) ^ box.L ^ box.W ^ box.H ^ 123);
+      const orders = buildCandidateOrders(items, rng, extraRandomOrders);
+      const heuristics = ['BLF', 'TIGHT', 'SUPPORT', 'WALL'];
+
+      let best = null;
+
+      for (const order of orders) {
+        for (const heuristic of heuristics) {
+          const result = packIntoBins([createEmptyBin(type)], order, heuristic, type, wantedLayers, false);
+          const bin = result.bins[0] || createEmptyBin(type);
+
+          const candidate = {
+            type,
+            placements: bin.placements.map(p => ({ ...p })),
+            items: [...bin.items],
+            placedUnits: bin.items.length,
+            usedVolume: bin.usedVolume
+          };
+
+          const test = {
+            type,
+            bins: [cloneBin(bin)],
+            unplaced: []
+          };
+
+          const current = best
+            ? {
+                type,
+                bins: [
+                  {
+                    type,
+                    box: CONTAINERS[type],
+                    placements: best.placements.map(p => ({ ...p })),
+                    items: [...best.items],
+                    usedVolume: best.usedVolume
+                  }
+                ],
+                unplaced: []
+              }
+            : null;
+
+          if (!best || isSolutionBetter(test, current, items.length)) {
+            best = candidate;
+          }
+        }
+      }
+
+      return best;
+    }
+
+    function solveOpenBins3D(items, type = '40', wantedLayers = 1) {
+      const totalUnits = items.length;
+      if (!items.length) return { type, mode: getEquipmentMode(), bins: [], unplaced: [] };
+
+      const box = CONTAINERS[type];
+      const rng = makeSeededRng(getItemSeed(items) ^ box.L ^ box.W ^ box.H ^ 98765);
+      const randomOrders = items.length <= 20 ? 14 : items.length <= 60 ? 10 : 6;
+      const orders = buildCandidateOrders(items, rng, randomOrders);
+      const heuristics = ['BLF', 'TIGHT', 'SUPPORT', 'WALL'];
+
+      let best = null;
+
+      for (const order of orders) {
+        for (const heuristic of heuristics) {
+          const candidate = packIntoBins([], order, heuristic, type, wantedLayers, true);
+
+          if (isSolutionBetter(candidate, best, totalUnits)) {
+            best = candidate;
+          }
+        }
+      }
+
+      return best || { type, mode: getEquipmentMode(), bins: [], unplaced: items };
+    }
+
+    function tryEliminateSparseBin(solution, wantedLayers) {
+      if (solution.bins.length <= 1) return solution;
+
+      const totalUnits = solutionPlacedUnits(solution) + solution.unplaced.length;
+      const order = solution.bins
+        .map((bin, idx) => ({ idx, fill: fillRatio(bin), units: bin.items.length }))
+        .sort((a, b) => a.fill - b.fill || a.units - b.units);
+
+      const heuristics = ['SUPPORT', 'BLF', 'TIGHT', 'WALL'];
+
+      for (const entry of order) {
+        const removedItems = solution.bins[entry.idx].items;
+        const keptBins = solution.bins.filter((_, i) => i !== entry.idx).map(cloneBin);
+
+        for (const heuristic of heuristics) {
+          const repaired = packIntoBins(
+            keptBins,
+            [...removedItems].sort((a, b) => b.volume - a.volume || b.area - a.area),
+            heuristic,
+            solution.type,
+            wantedLayers,
+            false
+          );
+
+          // Only the items from the removed bin may be newly unplaced here.
+          // Keep any original unplaced items (for example out-of-gauge pallets)
+          // so polishSolution never makes them disappear from the final visual warning.
+          if (repaired.unplaced.length === 0) {
+            const candidate = {
+              type: solution.type,
+              bins: repaired.bins,
+              unplaced: [...solution.unplaced]
+            };
+
+            if (isSolutionBetter(candidate, solution, totalUnits)) {
+              return candidate;
+            }
+          }
+        }
+      }
+
+      return solution;
+    }
+
+    function tryPairwiseMerge(solution, wantedLayers) {
+      if (solution.bins.length <= 1) return solution;
+
+      const totalUnits = solutionPlacedUnits(solution) + solution.unplaced.length;
+
+      for (let i = 0; i < solution.bins.length; i++) {
+        for (let j = i + 1; j < solution.bins.length; j++) {
+          const combinedItems = [...solution.bins[i].items, ...solution.bins[j].items];
+          const merged = bestSingleContainerPlan3D(solution.type, combinedItems, wantedLayers, 6);
+
+          if (merged.items.length === combinedItems.length) {
+            const nextBins = solution.bins
+              .filter((_, idx) => idx !== i && idx !== j)
+              .map(cloneBin);
+
+            nextBins.push({
+              type: solution.type,
+              box: CONTAINERS[solution.type],
+              placements: merged.placements.map(p => ({ ...p })),
+              items: [...merged.items],
+              usedVolume: merged.usedVolume
+            });
+
+            const candidate = {
+              type: solution.type,
+              bins: nextBins,
+              unplaced: [...solution.unplaced]
+            };
+
+            if (isSolutionBetter(candidate, solution, totalUnits)) {
+              return candidate;
+            }
+          }
+        }
+      }
+
+      return solution;
+    }
+
+    function polishSolution(solution, wantedLayers) {
+      let current = cloneSolution(solution);
+      let improved = true;
+      let guard = 0;
+
+      while (improved && guard < 12) {
+        guard++;
+        improved = false;
+
+        const eliminated = tryEliminateSparseBin(current, wantedLayers);
+        if (eliminated !== current && eliminated.bins.length < current.bins.length) {
+          current = eliminated;
+          improved = true;
+          continue;
+        }
+
+        const merged = tryPairwiseMerge(current, wantedLayers);
+        if (merged !== current && merged.bins.length < current.bins.length) {
+          current = merged;
+          improved = true;
+        }
+      }
+
+      return current;
+    }
+
+    function makeBinFromSinglePlan(type, plan) {
+      const box = CONTAINERS[type];
+      const placements = plan.placements.map(p => ({ ...p }));
+      return {
+        type,
+        box,
+        placements,
+        items: [...plan.items],
+        usedVolume: plan.usedVolume,
+        overWidthWarning: placements.some(p => placementExceedsNominalWidth(p, box)),
+        overHeightWarning: placements.some(p => placementExceedsNominalHeight(p, box))
+      };
+    }
+
+    function isShrinkCandidateBetter(a, b, mode) {
+      if (!b) return true;
+
+      const widthCountA = binWidthWarningCount(a);
+      const widthCountB = binWidthWarningCount(b);
+      if (widthCountA !== widthCountB) return widthCountA < widthCountB;
+
+      const rankA = containerRank(a.type, mode);
+      const rankB = containerRank(b.type, mode);
+      if (rankA !== rankB) return rankA < rankB;
+
+      const widthAmountA = binWidthOverflowAmount(a);
+      const widthAmountB = binWidthOverflowAmount(b);
+      if (Math.abs(widthAmountA - widthAmountB) > EPS) return widthAmountA < widthAmountB;
+
+      return fillRatio(a) > fillRatio(b);
+    }
+
+    function shrinkBinsToSmallestPossibleType(solution, wantedLayers, mode = getEquipmentMode()) {
+      const shrunkBins = solution.bins.map(bin => {
+        const allowedTypes = getContainerOrder(mode)
+          .filter(type => containerRank(type, mode) <= containerRank(bin.type, mode))
+          .sort((a, b) => containerRank(a, mode) - containerRank(b, mode));
+
+        let bestBin = cloneBin(bin);
+
+        for (const type of allowedTypes) {
+          const plan = bestSingleContainerPlan3D(type, bin.items, wantedLayers, 5);
+
+          if (plan.items.length === bin.items.length) {
+            const candidateBin = makeBinFromSinglePlan(type, plan);
+            if (isShrinkCandidateBetter(candidateBin, bestBin, mode)) {
+              bestBin = candidateBin;
+            }
+          }
+        }
+
+        return bestBin;
+      });
+
+      return {
+        type: solution.type,
+        mode,
+        bins: shrunkBins,
+        unplaced: [...solution.unplaced]
+      };
+    }
+
+    function buildOptimizedMixedSolution(items, wantedLayers, mode = getEquipmentMode()) {
+      let best = null;
+      const types = getContainerOrder(mode);
+      const startTypes = mode === 'flatRack'
+        ? types
+        : (types.length > 1 ? types.slice(1) : types);
+
+      for (const startType of startTypes) {
+        let solution = solveOpenBins3D(items, startType, wantedLayers);
+        solution.mode = mode;
+        solution = polishSolution(solution, wantedLayers);
+        solution.mode = mode;
+        solution = shrinkBinsToSmallestPossibleType(solution, wantedLayers, mode);
+
+        if (isSolutionBetter(solution, best, items.length)) {
+          best = solution;
+        }
+      }
+
+      return best || { type: getLargestContainerType(mode), mode, bins: [], unplaced: items };
+    }
+
+    function theoreticalUpperBound(box, pallet, wantedLayers) {
+      if (!canItemFitInEmptyContainerBox(box, pallet)) return 0;
+
+      const maxLayers = getAllowedLayersForHeight(pallet.H, wantedLayers, box);
+
+      if (box.flatRack) {
+        const bestPerLayer = getItemOrientations(pallet).reduce((best, opt) => {
+          if (opt.L > box.L + EPS) return best;
+          if (pallet.H > getContainerHeightLimit(box) + EPS) return best;
+          if (!flatRackOrientationAllowed(box, pallet, opt.L, opt.W)) return best;
+          if (!canItemEnterContainer(box, pallet, opt.L, opt.W)) return best;
+
+          const along = Math.max(0, Math.floor(box.L / opt.L));
+          const across = opt.W <= box.W + EPS ? Math.max(0, Math.floor(box.W / opt.W)) : 1;
+          return Math.max(best, along * Math.max(1, across));
+        }, 0);
+
+        return Math.max(0, bestPerLayer * maxLayers);
+      }
+
+      const areaUpper = Math.floor((box.L * box.W * maxLayers) / (pallet.L * pallet.W));
+
+      if (box.roofless || box.openSides) {
+        return Math.max(0, areaUpper);
+      }
+
+      const volumeUpper = Math.floor((box.L * box.W * box.H) / (pallet.L * pallet.W * pallet.H));
+
+      return Math.max(0, Math.min(areaUpper, volumeUpper));
+    }
+
+    function canFitCountInSingleContainer(type, pallet, count, wantedLayers) {
+      if (count <= 0) return true;
+
+      const items = buildSingleItems(pallet.L, pallet.W, pallet.H, count, { lockRotation: Boolean(pallet.lockRotation) });
+      const plan = bestSingleContainerPlan3D(type, items, wantedLayers, count <= 30 ? 8 : 5);
+
+      return plan.placedUnits === count;
+    }
+
+    function estimateSingleCapacity3D(type, pallet, wantedLayers) {
+      const key = `${type}|${pallet.L}|${pallet.W}|${pallet.H}|${wantedLayers}|${pallet.lockRotation ? 1 : 0}`;
+
+      if (singleCapacityCache.has(key)) return singleCapacityCache.get(key);
+
+      const upper = theoreticalUpperBound(CONTAINERS[type], pallet, wantedLayers);
+
+      if (upper <= 0) {
+        singleCapacityCache.set(key, 0);
+        return 0;
+      }
+
+      let lo = 0;
+      let hi = 1;
+
+      while (hi < upper && canFitCountInSingleContainer(type, pallet, hi, wantedLayers)) {
+        lo = hi;
+        hi = Math.min(upper, hi * 2);
+        if (hi === lo) break;
+      }
+
+      if (hi === upper && canFitCountInSingleContainer(type, pallet, hi, wantedLayers)) {
+        singleCapacityCache.set(key, hi);
+        return hi;
+      }
+
+      while (lo + 1 < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+
+        if (canFitCountInSingleContainer(type, pallet, mid, wantedLayers)) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+
+      singleCapacityCache.set(key, lo);
+      return lo;
+    }
+
+    // -------------------------------
+    // 3D-VISUALISERING
+    // -------------------------------
+
+    function addLineToGroup(group, points, material) {
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material);
+      group.add(line);
+      return line;
+    }
+
+    function addDoorDimensionLines(group, box) {
+      if (box.noDoor) {
+        const label = createTextLabel('Öppet flak / ingen dörr', '#c28a55', 230, 24);
+        label.position.set(-box.L / 2, box.H + 16, box.W / 2 + 14);
+        group.add(label);
+        return;
+      }
+
+      const doorH = Math.min(box.doorH ?? box.H, box.H);
+      const doorW = Math.min(box.doorW ?? box.W, box.W);
+      const x = (box.L / 2) + 4;
+      const zLeft = -doorW / 2;
+      const zRight = doorW / 2;
+      const yBottom = 0;
+      const yTop = doorH;
+      const zDim = zRight + 20;
+      const yDim = Math.min(doorH + 16, box.H + 16);
+      const tick = 12;
+
+      const doorMat = new THREE.LineBasicMaterial({ color: 0xc28a55, transparent: true, opacity: 0.9 });
+      const dimMat = new THREE.LineBasicMaterial({ color: 0xb8946b, transparent: true, opacity: 0.9 });
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yBottom, zLeft),
+        new THREE.Vector3(x, yTop, zLeft),
+        new THREE.Vector3(x, yTop, zRight),
+        new THREE.Vector3(x, yBottom, zRight),
+        new THREE.Vector3(x, yBottom, zLeft)
+      ], doorMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yBottom, 0),
+        new THREE.Vector3(x, yTop, 0)
+      ], doorMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yBottom, zDim),
+        new THREE.Vector3(x, yTop, zDim)
+      ], dimMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yBottom, zDim - tick),
+        new THREE.Vector3(x, yBottom, zDim + tick)
+      ], dimMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yTop, zDim - tick),
+        new THREE.Vector3(x, yTop, zDim + tick)
+      ], dimMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yDim, zLeft),
+        new THREE.Vector3(x, yDim, zRight)
+      ], dimMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yDim - tick, zLeft),
+        new THREE.Vector3(x, yDim + tick, zLeft)
+      ], dimMat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(x, yDim - tick, zRight),
+        new THREE.Vector3(x, yDim + tick, zRight)
+      ], dimMat);
+
+      const heightLabel = createTextLabel(`Dörr H ${doorH} cm`, '#c28a55', 170, 24);
+      heightLabel.position.set(x - 4, doorH / 2, zDim + 12);
+      group.add(heightLabel);
+
+      const widthLabel = createTextLabel(`Dörr B ${doorW} cm`, '#c28a55', 170, 24);
+      widthLabel.position.set(x - 4, yDim + 12, zLeft + 10);
+      group.add(widthLabel);
+    }
+
+    function addTopOpeningLines(group, box) {
+      if (!box.topLoad || !box.roofOpenL || !box.roofOpenW) return;
+
+      const openL = Math.min(box.roofOpenL, box.L);
+      const openW = Math.min(box.roofOpenW, box.W);
+      const y = box.H + 3;
+      const xLeft = -openL / 2;
+      const xRight = openL / 2;
+      const zBack = -openW / 2;
+      const zFront = openW / 2;
+
+      const mat = new THREE.LineBasicMaterial({ color: 0xc28a55, transparent: true, opacity: 0.9 });
+
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft, y, zBack),
+        new THREE.Vector3(xRight, y, zBack),
+        new THREE.Vector3(xRight, y, zFront),
+        new THREE.Vector3(xLeft, y, zFront),
+        new THREE.Vector3(xLeft, y, zBack)
+      ], mat);
+
+      const label = createTextLabel(`Topp ${openL}x${openW} cm`, '#c28a55', 190, 24);
+      label.position.set(xLeft, y + 22, zBack);
+      group.add(label);
+    }
+
+    function palletTooTallForContainer(item, box) {
+      if (box.roofless || box.openSides) return false;
+      return item.H > box.H || item.H > (box.doorH ?? box.H);
+    }
+
+    function palletTooTallForEveryContainer(item) {
+      return getContainerOrder().every(type => palletTooTallForContainer(item, CONTAINERS[type]));
+    }
+
+    function addTopOutlineWarning(group, box) {
+      const mat = new THREE.LineBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.95 });
+      const y = box.H + 1;
+      const xLeft = -box.L / 2;
+      const xRight = box.L / 2;
+      const zBack = -box.W / 2;
+      const zFront = box.W / 2;
+
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft, y, zBack),
+        new THREE.Vector3(xRight, y, zBack),
+        new THREE.Vector3(xRight, y, zFront),
+        new THREE.Vector3(xLeft, y, zFront),
+        new THREE.Vector3(xLeft, y, zBack)
+      ], mat);
+    }
+
+    function placementExceedsNominalHeight(placement, box) {
+      return placement.z + placement.H > box.H + 1e-6;
+    }
+
+    function binHasHeightWarning(bin) {
+      return Boolean(bin.overHeightWarning) || bin.placements.some(p => placementExceedsNominalHeight(p, bin.box));
+    }
+
+    function binHasWidthWarning(bin) {
+      return Boolean(bin.overWidthWarning) || bin.placements.some(p => placementExceedsNominalWidth(p, bin.box));
+    }
+
+    function addFlatRackSideWarningLines(group, box) {
+      if (!box.flatRack) return;
+
+      const mat = new THREE.LineBasicMaterial({ color: 0xff4d4d, transparent: true, opacity: 1 });
+      const xLeft = -box.L / 2;
+      const xRight = box.L / 2;
+      const zBack = -box.W / 2;
+      const zFront = box.W / 2;
+      const yLevels = [6, Math.max(10, box.H + 2)];
+
+      yLevels.forEach(y => {
+        addLineToGroup(group, [
+          new THREE.Vector3(xLeft, y, zBack),
+          new THREE.Vector3(xRight, y, zBack)
+        ], mat);
+
+        addLineToGroup(group, [
+          new THREE.Vector3(xLeft, y, zFront),
+          new THREE.Vector3(xRight, y, zFront)
+        ], mat);
+      });
+    }
+
+    function floorBoxesIntersect2D(a, b) {
+      return !(
+        a.x >= b.x + b.L ||
+        a.x + a.L <= b.x ||
+        a.y >= b.y + b.W ||
+        a.y + a.W <= b.y
+      );
+    }
+
+    function generateVisualFloorPoints(bin) {
+      const points = [{ x: 0, y: 0 }];
+
+      for (const p of bin.placements) {
+        points.push(
+          { x: p.x + p.L, y: p.y },
+          { x: p.x, y: p.y + p.W },
+          { x: p.x + p.L, y: p.y + p.W }
+        );
+      }
+
+      const seen = new Set();
+      return points
+        .filter(pt => pt.x >= 0 && pt.y >= 0 && pt.x <= bin.box.L && pt.y <= bin.box.W)
+        .filter(pt => {
+          const key = `${pt.x}|${pt.y}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort((a, b) => a.x - b.x || a.y - b.y);
+    }
+
+    function canPlaceVisualFloor(bin, x, y, L, W) {
+      if (x < 0 || y < 0 || x + L > bin.box.L || y + W > bin.box.W) return false;
+
+      const probe = { x, y, L, W };
+      return !bin.placements.some(p => floorBoxesIntersect2D(probe, p));
+    }
+
+    function findVisualFloorPlacement(bin, item) {
+      let best = null;
+      const points = generateVisualFloorPoints(bin);
+      const options = getItemOrientations(item);
+
+      for (const pt of points) {
+        for (const opt of options) {
+          if (!canPlaceVisualFloor(bin, pt.x, pt.y, opt.L, opt.W)) continue;
+
+          const score = [pt.x, pt.y, bin.box.L - (pt.x + opt.L), bin.box.W - (pt.y + opt.W)];
+
+          if (!best || lexicographicallyBetter(score, best.score)) {
+            best = {
+              score,
+              placement: {
+                baseId: item.baseId,
+                x: pt.x,
+                y: pt.y,
+                z: 0,
+                L: opt.L,
+                W: opt.W,
+                H: item.H,
+                kind: opt.kind,
+                layer: 1,
+                supportId: null,
+                isOverWidth: isFlatRackOverWidth(bin.box, opt.W),
+                item
+              }
+            };
+          }
+        }
+      }
+
+      return best?.placement ?? null;
+    }
+
+    function fallbackVisualPlacement(bin, item) {
+      const options = getItemOrientations(item);
+
+      options.sort((a, b) => {
+        const overflowA = Math.max(0, a.L - bin.box.L) + Math.max(0, a.W - bin.box.W);
+        const overflowB = Math.max(0, b.L - bin.box.L) + Math.max(0, b.W - bin.box.W);
+        return overflowA - overflowB;
+      });
+
+      const opt = options[0];
+      const y = getPlacementYForOrientation(bin.box, 0, opt.W);
+
+      return {
+        baseId: item.baseId,
+        x: 0,
+        y,
+        z: 0,
+        L: opt.L,
+        W: opt.W,
+        H: item.H,
+        kind: opt.kind,
+        layer: 1,
+        supportId: null,
+        isOverWidth: isFlatRackOverWidth(bin.box, opt.W),
+        item
+      };
+    }
+
+    function placeVisualOnlyItem(bin, item) {
+      const placement = findVisualFloorPlacement(bin, item) || fallbackVisualPlacement(bin, item);
+      bin.placements.push(placement);
+      bin.items.push(item);
+      bin.usedVolume += item.volume;
+      bin.visualOnly = true;
+      bin.overHeightWarning = bin.overHeightWarning || palletTooTallForContainer(item, bin.box);
+      return placement;
+    }
+
+    function buildVisualOnlyBinsForTooTallItems(items) {
+      const bins = [];
+      const ordered = [...items].sort((a, b) => b.area - a.area || b.volume - a.volume || b.H - a.H);
+      const visualType = getLargestContainerType();
+
+      for (const item of ordered) {
+        let placed = false;
+
+        for (const bin of bins) {
+          if (findVisualFloorPlacement(bin, item)) {
+            placeVisualOnlyItem(bin, item);
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) {
+          const bin = createEmptyBin(visualType);
+          bin.visualOnly = true;
+          placeVisualOnlyItem(bin, item);
+          bins.push(bin);
+        }
+      }
+
+      return bins;
+    }
+
+    function createHeightWarningVisualSolution(items) {
+      return {
+        type: getLargestContainerType(),
+        mode: getEquipmentMode(),
+        bins: buildVisualOnlyBinsForTooTallItems(items),
+        unplaced: []
+      };
+    }
+
+    function addHeightWarningVisualBins(solution, items) {
+      if (!items.length) return solution;
+
+      const visualizedIds = new Set(items.map(item => item.baseId));
+
+      return {
+        type: solution.type,
+        mode: solution.mode || getEquipmentMode(),
+        bins: [...solution.bins, ...buildVisualOnlyBinsForTooTallItems(items)],
+        unplaced: solution.unplaced.filter(item => !visualizedIds.has(item.baseId))
+      };
+    }
+
+    function build3DSceneFromSolution(solution) {
+      clearSceneGroup();
+      interactivePalletMeshes = [];
+      window.__interactivePalletMeshes = interactivePalletMeshes;
+      lastRenderedSolution = solution;
+      hideRotatePalletButton();
+
+      let currentZ = 0;
+      const GAP = 250;
+
+      solution.bins.forEach(bin => {
+        const box = bin.box;
+
+        const group = new THREE.Group();
+        group.position.z = currentZ;
+        mainGroup.add(group);
+
+        const labelText = `${formatContainerType(bin.type)}${bin.visualOnly ? ' - höjdvarning' : ''} (${box.L}x${box.W}x${box.H}cm)`;
+        const label = createTextLabel(labelText);
+        label.position.set(-box.L / 2, box.H + 40, -box.W / 2);
+        group.add(label);
+
+        const floorGeo = new THREE.PlaneGeometry(box.L, box.W);
+        const floor = new THREE.Mesh(
+          floorGeo,
+          new THREE.MeshBasicMaterial({ color: 0x1a2238, side: THREE.DoubleSide })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        group.add(floor);
+
+        const boxGeo = new THREE.BoxGeometry(box.L, box.H, box.W);
+        const line = new THREE.LineSegments(
+          new THREE.EdgesGeometry(boxGeo),
+          new THREE.LineBasicMaterial({ color: 0x3d4c70 })
+        );
+        line.position.y = box.H / 2;
+        group.add(line);
+
+        if (binHasHeightWarning(bin)) {
+          addTopOutlineWarning(group, box);
+        }
+
+        if (binHasWidthWarning(bin)) {
+          addFlatRackSideWarningLines(group, box);
+        }
+
+        addDoorDimensionLines(group, box);
+        addTopOpeningLines(group, box);
+
+        const matA = new THREE.MeshLambertMaterial({ color: 0x4a9eff });
+        const matB = new THREE.MeshLambertMaterial({ color: 0x7bd89c });
+
+        bin.placements.forEach(p => {
+          const geo = new THREE.BoxGeometry(
+            Math.max(p.L - 2, 2),
+            Math.max(p.H - 2, 2),
+            Math.max(p.W - 2, 2)
+          );
+
+          const mat = (p.kind === 'A' ? matA : matB).clone();
+          mat.userData = { baseColor: mat.color?.getHex ? mat.color.getHex() : null };
+
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.userData = { kind: 'pallet', placement: p, bin, solution, box, mesh };
+          interactivePalletMeshes.push(mesh);
+          window.__interactivePalletMeshes = interactivePalletMeshes;
+          mesh.position.set(
+            (-box.L / 2) + p.x + (p.L / 2),
+            p.z + (p.H / 2),
+            (-box.W / 2) + p.y + (p.W / 2)
+          );
+          group.add(mesh);
+
+          const e = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0, transparent: true, opacity: 0.15 })
+          );
+          e.position.copy(mesh.position);
+          group.add(e);
+        });
+
+        currentZ += box.W + GAP;
+      });
+    }
+
+    function getPointerNdcFromEvent(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      return pointerNdc;
+    }
+
+    function placeRotateButtonAt(clientX, clientY) {
+      const rect = els.container.getBoundingClientRect();
+      const margin = 12;
+      const buttonW = 128;
+      const buttonH = 36;
+      const left = Math.max(margin, Math.min(clientX - rect.left + 14, rect.width - buttonW - margin));
+      const top = Math.max(margin, Math.min(clientY - rect.top + 14, rect.height - buttonH - margin));
+      els.rotatePalletBtn.style.left = `${left}px`;
+      els.rotatePalletBtn.style.top = `${top}px`;
+    }
+
+    function clearPalletHoverHighlight() {
+      interactivePalletMeshes.forEach(mesh => {
+        const baseColor = mesh.material?.userData?.baseColor;
+        if (baseColor !== null && baseColor !== undefined && mesh.material?.color?.setHex) {
+          mesh.material.color.setHex(baseColor);
+        }
+        if (mesh.material) mesh.material.opacity = 1;
+      });
+    }
+
+    function showRotatePalletButton(hit, clientX, clientY) {
+      hoveredPalletHit = hit;
+      els.rotatePalletBtn._palletHit = hit;
+      placeRotateButtonAt(clientX, clientY);
+      els.rotatePalletBtn.hidden = false;
+      els.rotatePalletBtn.classList.add('is-visible');
+      renderer.domElement.style.cursor = 'pointer';
+
+      clearPalletHoverHighlight();
+      if (hit?.mesh?.material?.color?.setHex) {
+        hit.mesh.material.color.setHex(0xffd166);
+      }
+    }
+
+    function hideRotatePalletButton() {
+      hoveredPalletHit = null;
+      clearPalletHoverHighlight();
+      if (els.rotatePalletBtn) {
+        els.rotatePalletBtn.hidden = true;
+        els.rotatePalletBtn.classList.remove('is-visible');
+        els.rotatePalletBtn._palletHit = null;
+      }
+      if (renderer?.domElement) renderer.domElement.style.cursor = '';
+    }
+
+    function handlePalletPointerMove(event) {
+      if (!interactivePalletMeshes.length) {
+        hideRotatePalletButton();
+        return;
+      }
+
+      camera.updateMatrixWorld(true);
+      mainGroup.updateMatrixWorld(true);
+      raycaster.setFromCamera(getPointerNdcFromEvent(event), camera);
+      const hits = raycaster.intersectObjects(interactivePalletMeshes, true);
+
+      if (!hits.length) {
+        hideRotatePalletButton();
+        return;
+      }
+
+      showRotatePalletButton(hits[0].object.userData, event.clientX, event.clientY);
+    }
+
+    function handlePalletCanvasClick(event) {
+      if (!interactivePalletMeshes.length) return;
+
+      camera.updateMatrixWorld(true);
+      mainGroup.updateMatrixWorld(true);
+      raycaster.setFromCamera(getPointerNdcFromEvent(event), camera);
+      const hits = raycaster.intersectObjects(interactivePalletMeshes, true);
+      if (!hits.length) return;
+
+      showRotatePalletButton(hits[0].object.userData, event.clientX, event.clientY);
+      handleRotatePalletClick(event);
+    }
+
+    function placementHasSupportedChildren(bin, placement) {
+      return bin.placements.some(p => p !== placement && p.supportId && p.supportId === placement.baseId && p.z > placement.z + EPS);
+    }
+
+    function clamp(value, min, max) {
+      if (max < min) return min;
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function candidateManualRotation(bin, placement) {
+      const nextL = placement.W;
+      const nextW = placement.L;
+
+      if (!Number.isFinite(nextL) || !Number.isFinite(nextW) || nextL <= 0 || nextW <= 0) {
+        return null;
+      }
+
+      // Knappen fungerar som fjärrkontroll för listan, inte som en lokal
+      // drag/rotera-operation. Därför testar vi inte kollision på exakt samma
+      // plats. När raden uppdateras körs packningsmotorn om och får flytta
+      // omkring övriga pallar vid behov.
+      return {
+        L: nextL,
+        W: nextW,
+        H: placement.H,
+        kind: placement.kind === 'A' ? 'B' : 'A'
+      };
+    }
+
+    function setRotationFeedback(message, ok = false) {
+      els.importMsg.innerHTML = `<span class="${ok ? 'success' : 'warning'}">${message}</span>`;
+    }
+
+    function syncManualRotationToPalletRows(placement, rotated) {
+      const sourceRowId = placement.item?.sourceRowId;
+      const rowEl = findPalletRowElementById(sourceRowId);
+
+      if (!rowEl) return null;
+
+      const rowData = readPalletRowElement(rowEl);
+      if (!rowData.isValid) return null;
+
+      const nextL = formatNumberForRowInput(rotated.L);
+      const nextW = formatNumberForRowInput(rotated.W);
+
+      if (rowData.count > 1) {
+        setPalletRowFieldValue(rowEl, 'count', rowData.count - 1);
+
+        addPalletRow({
+          count: 1,
+          L: nextL,
+          W: nextW,
+          H: formatNumberForRowInput(rowData.H),
+          weight: rowData.weight === '' ? '' : formatNumberForRowInput(rowData.weight),
+          lockRotation: true
+        }, false, rowEl);
+
+        return 'split';
+      }
+
+      setPalletRowFieldValue(rowEl, 'L', nextL);
+      setPalletRowFieldValue(rowEl, 'W', nextW);
+      setPalletRowRotationLock(rowEl, true);
+
+      return 'updated';
+    }
+
+    function handleRotatePalletClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const hit = hoveredPalletHit || els.rotatePalletBtn._palletHit;
+      if (!hit?.bin || !hit?.placement) return;
+
+      const { bin, placement } = hit;
+
+      const rotated = candidateManualRotation(bin, placement);
+
+      if (!rotated) {
+        setRotationFeedback('Pallen kunde inte roteras eftersom pallens mått är ogiltiga.');
+        return;
+      }
+
+      const syncResult = syncManualRotationToPalletRows(placement, rotated);
+
+      if (!syncResult) {
+        setRotationFeedback('Pallen roterades inte eftersom den inte kunde kopplas till en pallrad i listan.');
+        return;
+      }
+
+      hideRotatePalletButton();
+
+      const suffix = syncResult === 'split'
+        ? ' En ny låst rad skapades för just den pallen.'
+        : '';
+
+      setRotationFeedback(`Pallen roterades manuellt och låstes till ${formatNumberForRowInput(rotated.L)}x${formatNumberForRowInput(rotated.W)} cm.${suffix}`, true);
+      update();
+    }
+
+    function showEmpty20Container(message = "Inga pallar angivna.") {
+      const emptyType = getContainerOrder()[0] || '20';
+      const solution = {
+        type: emptyType,
+        mode: getEquipmentMode(),
+        bins: [createEmptyBin(emptyType)],
+        unplaced: []
+      };
+
+      els.reqText.innerText = '0 pallar';
+      els.msgBox.innerHTML = message;
+      build3DSceneFromSolution(solution);
+      autoFitCamera();
+    }
+
+    // -------------------------------
+    // UPPDATERINGAR
+    // -------------------------------
+
+    function updateMixedMode() {
+      updateEquipmentUi();
+
+      const mode = getEquipmentMode();
+      const rowDefinitions = readPalletRowDefinitions();
+      const pallets = buildPalletsFromRowDefinitions(rowDefinitions);
+      const wantedLayers = getWantedLayers();
+      const capacityTypes = getSingleCapacityTypes(mode);
+
+      if (!pallets.length) {
+        els.reqText.innerText = '0 pallar';
+        setCapacityRows(capacityTypes.map(type => ({ type, value: '-' })));
+        els.volTotal.innerText = '0.00 m³';
+        showEmpty20Container("Inga giltiga pallrader angivna.");
+        return;
+      }
+
+      const items = buildItemsFromPallets(pallets);
+      const tooTallItems = items.filter(palletTooTallForEveryContainer);
+      const packableItems = items.filter(item => !palletTooTallForEveryContainer(item));
+
+      const capacityRows = capacityTypes.map(type => {
+        const plan = bestSingleContainerPlan3D(type, packableItems, wantedLayers, 8);
+        return { type, value: `${plan.placedUnits} st` };
+      });
+
+      setCapacityRows(capacityRows);
+      els.volTotal.innerText = totalVolumeOfPallets(pallets).toFixed(2) + ' m³';
+
+      const solution = packableItems.length
+        ? buildOptimizedMixedSolution(packableItems, wantedLayers, mode)
+        : { type: getLargestContainerType(mode), mode, bins: [], unplaced: [] };
+
+      const nonHeightUnplaced = solution.unplaced.filter(item => !palletTooTallForEveryContainer(item));
+      const visualSolution = addHeightWarningVisualBins(solution, tooTallItems);
+
+      if (!solution.bins.length) {
+        els.reqText.innerText = 'Godset för stort!';
+
+        const messages = [];
+
+        if (tooTallItems.length > 0) {
+          messages.push('<span class="warning">Out of gauge! Kontakta Adrian Keuneke asap!</span>');
+          messages.push(`För höga pallar visualiseras separat (${tooTallItems.length} st).`);
+        }
+
+        if (nonHeightUnplaced.length > 0) {
+          messages.push(`<span class="warning">${nonHeightUnplaced.length} pall(ar) kunde inte placeras i vald containertyp.</span>`);
+        }
+
+        if (!messages.length) {
+          messages.push('<span class="warning">Ingen pallrad fick plats i vald containertyp.</span>');
+        }
+
+        messages.push(getModeConfig(mode).note);
+        els.msgBox.innerHTML = messages.join('<br>');
+
+        if (tooTallItems.length) {
+          build3DSceneFromSolution(visualSolution);
+          autoFitCamera();
+        } else {
+          clearSceneGroup();
+        }
+
+        return;
+      }
+
+      els.reqText.innerText = formatContainerCounts(solution.bins, mode);
+
+      const grouped = groupImportedPallets(pallets);
+      const notes = [];
+
+      notes.push(`Pallar från rader: ${pallets.length} st fördelade på ${rowDefinitions.length} giltiga rad(er).`);
+      notes.push(`Riktig 3D-packning aktiv: ${getContainerOrder(mode).map(formatContainerType).join(', ')} testas.`);
+      notes.push(getModeConfig(mode).note);
+
+      if (wantedLayers > 1) {
+        notes.push('Stapling tillåts bara när pallen både får stöd underifrån och klarar vald lagergräns.');
+      }
+
+      grouped.forEach(g => {
+        const largestType = getLargestContainerType(mode);
+        const middleType = getContainerOrder(mode)[1] || largestType;
+        const allowedMiddle = getAllowedLayersForHeight(g.H, wantedLayers, CONTAINERS[middleType]);
+        const allowedLargest = getAllowedLayersForHeight(g.H, wantedLayers, CONTAINERS[largestType]);
+
+        if (wantedLayers > 1 && allowedLargest < wantedLayers) {
+          notes.push(`${g.L}x${g.W}x${g.H}: ${formatContainerType(largestType)} klarar max ${allowedLargest} lager p.g.a. dörr/takhöjd.`);
+        } else if (wantedLayers > 1 && allowedMiddle < wantedLayers) {
+          notes.push(`${g.L}x${g.W}x${g.H}: ${formatContainerType(middleType)} klarar max ${allowedMiddle} lager, ${formatContainerType(largestType)} testas också.`);
+        }
+      });
+
+      notes.push('Optimering: 3D extreme points + multi-start + bin-eliminering + pairwise merge.');
+
+      const widthWarningCount = solutionWidthWarningCount(solution);
+      if (widthWarningCount > 0) {
+        notes.push(`<span class="warning">Överbredd på flat rack: ${widthWarningCount} pall(ar).</span>`);
+      }
+
+      if (nonHeightUnplaced.length > 0) {
+        notes.push(`⚠️ ${nonHeightUnplaced.length} pall(ar) kunde inte placeras i vald containertyp.`);
+      } else if (packableItems.length > 0) {
+        notes.push('Alla pallar inom valda container-/dörr-/toppmått placerades.');
+      }
+
+      if (tooTallItems.length > 0) {
+        notes.push(`<span class="warning">Out of gauge: ${tooTallItems.length} för höga pall(ar) visualiseras separat.</span>`);
+      }
+
+
+      const fillText = solution.bins
+        .map((bin, i) => `#${i + 1} ${formatContainerType(bin.type)}: ${(fillRatio(bin) * 100).toFixed(1)}% nominell volymfyllnad`)
+        .join('<br>');
+
+      els.msgBox.innerHTML = notes.join('<br>') + '<br>' + fillText;
+
+      build3DSceneFromSolution(visualSolution);
+      autoFitCamera();
+    }
+
+    // -------------------------------
+    // SHARED
+    // -------------------------------
+
+    function updateEquipmentUi() {
+      const config = getModeConfig();
+      els.dimensionLegendLabel.innerText = config.legend;
+    }
+
+    function setCapacityRows(rows) {
+      const slots = [
+        { row: els.cap40HCRow, label: els.cap40HCLabel, value: els.cap40HC },
+        { row: els.cap40Row, label: els.cap40Label, value: els.cap40 },
+        { row: els.cap20Row, label: els.cap20Label, value: els.cap20 }
+      ];
+
+      slots.forEach((slot, idx) => {
+        const data = rows[idx];
+        slot.row.hidden = !data;
+
+        if (!data) return;
+
+        slot.label.innerText = `Kapacitet ${formatContainerType(data.type)}:`;
+        slot.value.innerText = data.value;
+      });
+    }
+
+    function autoFitCamera() {
+      if (freeCam) return;
+
+      const box = new THREE.Box3().setFromObject(mainGroup);
+      if (!Number.isFinite(box.min.x) || !Number.isFinite(box.max.x)) return;
+
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z, 400);
+      const camDist = maxDim * CAM_CONFIG.distanceMult;
+
+      const targetPoint = new THREE.Vector3(
+        center.x + CAM_CONFIG.shiftX,
+        center.y + CAM_CONFIG.shiftY,
+        center.z + CAM_CONFIG.shiftZ
+      );
+
+      camera.position.set(
+        targetPoint.x + (camDist * CAM_CONFIG.xAngleMult),
+        targetPoint.y + (camDist * CAM_CONFIG.yAngleMult),
+        targetPoint.z + (camDist * CAM_CONFIG.zAngleMult)
+      );
+
+      camera.lookAt(targetPoint);
+      controls.target.copy(targetPoint);
+      controls.update();
+    }
+
+    function getCurrentTotalPalletCount() {
+      return readPalletRowDefinitions().reduce((sum, row) => sum + row.count, 0);
+    }
+
+    function showLoadingBar() {
+      clearTimeout(hideLoadingTimer);
+      loadingToken++;
+      loadingVisibleSince = performance.now();
+      els.loadingOverlay.hidden = false;
+      els.container.classList.add('is-calculating');
+      return loadingToken;
+    }
+
+    function hideLoadingBar(token = loadingToken, enforceMinimum = true) {
+      clearTimeout(hideLoadingTimer);
+
+      const elapsed = performance.now() - loadingVisibleSince;
+      const delay = enforceMinimum ? Math.max(0, MIN_LOADING_MS - elapsed) : 0;
+
+      hideLoadingTimer = window.setTimeout(() => {
+        if (token !== loadingToken) return;
+        els.loadingOverlay.hidden = true;
+        els.container.classList.remove('is-calculating');
+      }, delay);
+    }
+
+    function forceHideLoadingBar() {
+      loadingToken++;
+      clearTimeout(hideLoadingTimer);
+      els.loadingOverlay.hidden = true;
+      els.container.classList.remove('is-calculating');
+    }
+
+    function runUpdate() {
+      updateMixedMode();
+    }
+
+    function update() {
+      clearTimeout(updateDelayTimer);
+
+      const totalPallets = getCurrentTotalPalletCount();
+
+      if (totalPallets > LONG_CALC_THRESHOLD) {
+        const jobId = ++updateJobId;
+        const loadingId = showLoadingBar();
+
+        updateDelayTimer = window.setTimeout(() => {
+          if (jobId !== updateJobId) return;
+
+          requestAnimationFrame(() => {
+            window.setTimeout(() => {
+              if (jobId !== updateJobId) return;
+
+              try {
+                runUpdate();
+              } finally {
+                hideLoadingBar(loadingId, true);
+              }
+            }, 0);
+          });
+        }, LONG_CALC_DELAY_MS);
+
+        return;
+      }
+
+      updateJobId++;
+      forceHideLoadingBar();
+      runUpdate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    addPalletRow({ count: 1 }, false);
+    update();
+    animate();
+  </script>
+</body>
+</html>
