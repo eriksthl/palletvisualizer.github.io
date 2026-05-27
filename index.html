@@ -509,6 +509,7 @@
       box-shadow: 0 8px 22px rgba(0,0,0,0.35);
       user-select: none;
       white-space: nowrap;
+      pointer-events: none;
     }
 
     .rotate-pallet-button.is-visible {
@@ -533,7 +534,7 @@
 
   <div class="sidebar">
     <h1>📦Eriks Pallpacknings-Kalkylator 3000</h1>
-    <div class="app-version">Version 6.3.3</div>
+    <div class="app-version">Version 6.3.5</div>
 
     <div class="input-panel">
       <div class="field">
@@ -895,6 +896,9 @@
     let hoveredPalletHit = null;
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
+    let palletPointerDownHit = null;
+    let palletPointerDownPointerId = null;
+    let palletPointerDownCancelled = false;
 
     els.toggleCamBtn.addEventListener('click', () => {
       freeCam = !freeCam;
@@ -919,7 +923,6 @@
 
     els.addPalletRow.addEventListener('click', () => {
       addPalletRow({ count: 1 }, true);
-      els.importMsg.innerHTML = 'Ny pallrad tillagd.';
     });
 
     els.importPalletsBtn.addEventListener('click', () => {
@@ -940,9 +943,10 @@
     });
 
     renderer.domElement.addEventListener('pointermove', handlePalletPointerMove);
-    renderer.domElement.addEventListener('click', handlePalletCanvasClick);
-    renderer.domElement.addEventListener('mousemove', handlePalletPointerMove);
-    els.container.addEventListener('pointerleave', hideRotatePalletButton);
+    renderer.domElement.addEventListener('pointerdown', handlePalletPointerDown);
+    renderer.domElement.addEventListener('pointerup', handlePalletPointerUp);
+    renderer.domElement.addEventListener('pointercancel', handlePalletPointerCancel);
+    els.container.addEventListener('pointerleave', handlePalletPointerLeave);
     els.rotatePalletBtn.addEventListener('pointerdown', event => {
       event.preventDefault();
       event.stopPropagation();
@@ -1305,8 +1309,8 @@
       URL.revokeObjectURL(url);
 
       els.importMsg.innerHTML = rows.length
-        ? `<span class="success">Exporterade ${rows.length} rad(er) till CSV.</span>`
-        : '<span class="warning">Exporterade bara CSV-rubriker eftersom inga giltiga pallrader finns.</span>';
+        ? '<span class="success">CSV exporterad.</span>'
+        : '<span class="warning">Inga giltiga pallrader att exportera.</span>';
     }
 
     function detectCsvDelimiter(text) {
@@ -1591,23 +1595,75 @@
       return (box.roofless || box.openSides) ? ROOFLESS_CALC_HEIGHT : box.H;
     }
 
-    function canItemEnterContainer(box, item, L, W) {
+    function fitsThroughDoorOpening(box, item, W) {
       if (box.noDoor || box.openSides) return true;
 
-      const fitsDoor =
-        W <= (box.doorW ?? box.W) + 1e-6 &&
-        item.H <= (box.doorH ?? box.H) + 1e-6;
+      return (
+        W <= (box.doorW ?? box.W) + EPS &&
+        item.H <= (box.doorH ?? box.H) + EPS
+      );
+    }
 
-      if (fitsDoor) return true;
+    function fitsThroughTopOpening(box, L, W) {
+      if (!box.topLoad) return false;
 
-      if (box.topLoad) {
-        return (
-          L <= (box.roofOpenL ?? box.L) + 1e-6 &&
-          W <= (box.roofOpenW ?? box.W) + 1e-6
-        );
+      return (
+        L <= (box.roofOpenL ?? box.L) + EPS &&
+        W <= (box.roofOpenW ?? box.W) + EPS
+      );
+    }
+
+    function canItemEnterContainer(box, item, L, W) {
+      if (box.noDoor || box.openSides) return true;
+      if (fitsThroughDoorOpening(box, item, W)) return true;
+      return fitsThroughTopOpening(box, L, W);
+    }
+
+    function openTopPlacementNeedsRoofOpeningClearance(box, item) {
+      // Endast out-of-gauge/överhöjda open-top-pallar måste hållas innanför
+      // den centrala toppöppningen. In-gauge-gods får fortfarande nyttja väggarna.
+      return Boolean(box.topLoad) && item.H > box.H + EPS;
+    }
+
+    function getRoofOpeningBounds(box) {
+      const openL = Math.min(box.roofOpenL ?? box.L, box.L);
+      const openW = Math.min(box.roofOpenW ?? box.W, box.W);
+      const xMin = Math.max(0, (box.L - openL) / 2);
+      const yMin = Math.max(0, (box.W - openW) / 2);
+
+      return {
+        xMin,
+        xMax: xMin + openL,
+        yMin,
+        yMax: yMin + openW
+      };
+    }
+
+    function placementFitsRoofOpeningClearance(box, item, x, y, L, W) {
+      if (!openTopPlacementNeedsRoofOpeningClearance(box, item)) return true;
+
+      const bounds = getRoofOpeningBounds(box);
+      return (
+        x >= bounds.xMin - EPS &&
+        x + L <= bounds.xMax + EPS &&
+        y >= bounds.yMin - EPS &&
+        y + W <= bounds.yMax + EPS
+      );
+    }
+
+    function adjustOpenTopPlacementPoint(box, item, desiredX, desiredY, L, W) {
+      if (!openTopPlacementNeedsRoofOpeningClearance(box, item)) {
+        return { x: desiredX, y: desiredY };
       }
 
-      return false;
+      const bounds = getRoofOpeningBounds(box);
+      const maxX = bounds.xMax - L;
+      const maxY = bounds.yMax - W;
+
+      return {
+        x: Math.max(bounds.xMin, Math.min(desiredX, maxX)),
+        y: Math.max(bounds.yMin, Math.min(desiredY, maxY))
+      };
     }
 
     function getItemOrientations(item) {
@@ -1657,6 +1713,11 @@
       return isFlatRackOverWidth(box, W) ? (box.W - W) / 2 : desiredY;
     }
 
+    function getPlacementPointForOrientation(box, item, desiredX, desiredY, L, W) {
+      const y = getPlacementYForOrientation(box, desiredY, W);
+      return adjustOpenTopPlacementPoint(box, item, desiredX, y, L, W);
+    }
+
     function placementOverWidthAmount(placement, box) {
       if (!box.flatRack) return 0;
       return Math.max(0, -placement.y, placement.y + placement.W - box.W, placement.W - box.W);
@@ -1664,6 +1725,30 @@
 
     function placementExceedsNominalWidth(placement, box) {
       return placementOverWidthAmount(placement, box) > EPS;
+    }
+
+    function centerFlatRackBinPlacementsAlongLength(bin) {
+      if (!bin?.box?.flatRack || !bin.placements?.length) return bin;
+
+      const minX = Math.min(...bin.placements.map(p => p.x));
+      const maxX = Math.max(...bin.placements.map(p => p.x + p.L));
+      const footprintLength = maxX - minX;
+
+      if (!Number.isFinite(footprintLength) || footprintLength > bin.box.L + EPS) return bin;
+
+      const shiftX = ((bin.box.L - footprintLength) / 2) - minX;
+      if (Math.abs(shiftX) <= EPS) return bin;
+
+      bin.placements.forEach(p => {
+        p.x += shiftX;
+      });
+
+      return bin;
+    }
+
+    function centerFlatRackSolutionPlacementsAlongLength(solution) {
+      solution.bins.forEach(centerFlatRackBinPlacementsAlongLength);
+      return solution;
     }
 
     function canItemFitInEmptyContainerBox(box, item) {
@@ -1905,6 +1990,11 @@
     function generateCandidatePoints(bin) {
       const points = [{ x: 0, y: 0, z: 0 }];
 
+      if (bin.box.topLoad && bin.box.roofOpenL && bin.box.roofOpenW) {
+        const roofBounds = getRoofOpeningBounds(bin.box);
+        points.push({ x: roofBounds.xMin, y: roofBounds.yMin, z: 0 });
+      }
+
       for (const p of bin.placements) {
         const top = p.z + p.H;
 
@@ -1977,6 +2067,8 @@
         if (y < -EPS || y + W > box.W + EPS) return null;
       }
 
+      if (!placementFitsRoofOpeningClearance(box, item, x, y, L, W)) return null;
+
       const probe = { x, y, z, L, W, H: item.H };
 
       for (const p of bin.placements) {
@@ -2035,14 +2127,14 @@
 
       for (const pt of points) {
         for (const opt of options) {
-          const candidateY = getPlacementYForOrientation(bin.box, pt.y, opt.W);
-          const supportInfo = canPlaceInBin(bin, item, pt.x, candidateY, pt.z, opt.L, opt.W, wantedLayers);
+          const candidatePoint = getPlacementPointForOrientation(bin.box, item, pt.x, pt.y, opt.L, opt.W);
+          const supportInfo = canPlaceInBin(bin, item, candidatePoint.x, candidatePoint.y, pt.z, opt.L, opt.W, wantedLayers);
           if (!supportInfo) continue;
 
           const placement = {
             baseId: item.baseId,
-            x: pt.x,
-            y: candidateY,
+            x: candidatePoint.x,
+            y: candidatePoint.y,
             z: pt.z,
             L: opt.L,
             W: opt.W,
@@ -2901,6 +2993,8 @@
     }
 
     function build3DSceneFromSolution(solution) {
+      solution = centerFlatRackSolutionPlacementsAlongLength(cloneSolution(solution));
+
       clearSceneGroup();
       interactivePalletMeshes = [];
       window.__interactivePalletMeshes = interactivePalletMeshes;
@@ -3038,36 +3132,113 @@
       if (renderer?.domElement) renderer.domElement.style.cursor = '';
     }
 
-    function handlePalletPointerMove(event) {
-      if (!interactivePalletMeshes.length) {
-        hideRotatePalletButton();
-        return;
-      }
+    function getPalletHitFromPointerEvent(event) {
+      if (!interactivePalletMeshes.length) return null;
 
       camera.updateMatrixWorld(true);
       mainGroup.updateMatrixWorld(true);
       raycaster.setFromCamera(getPointerNdcFromEvent(event), camera);
       const hits = raycaster.intersectObjects(interactivePalletMeshes, true);
-
-      if (!hits.length) {
-        hideRotatePalletButton();
-        return;
-      }
-
-      showRotatePalletButton(hits[0].object.userData, event.clientX, event.clientY);
+      return hits[0]?.object?.userData ?? null;
     }
 
-    function handlePalletCanvasClick(event) {
-      if (!interactivePalletMeshes.length) return;
+    function isSamePalletHit(a, b) {
+      return Boolean(a?.mesh && b?.mesh && a.mesh === b.mesh);
+    }
 
-      camera.updateMatrixWorld(true);
-      mainGroup.updateMatrixWorld(true);
-      raycaster.setFromCamera(getPointerNdcFromEvent(event), camera);
-      const hits = raycaster.intersectObjects(interactivePalletMeshes, true);
-      if (!hits.length) return;
+    function resetPalletPointerDownState(event = null) {
+      if (
+        event?.pointerId !== undefined &&
+        renderer.domElement.hasPointerCapture?.(event.pointerId)
+      ) {
+        renderer.domElement.releasePointerCapture(event.pointerId);
+      }
 
-      showRotatePalletButton(hits[0].object.userData, event.clientX, event.clientY);
-      handleRotatePalletClick(event);
+      palletPointerDownHit = null;
+      palletPointerDownPointerId = null;
+      palletPointerDownCancelled = false;
+    }
+
+    function cancelPalletPointerDown() {
+      if (palletPointerDownHit) {
+        palletPointerDownCancelled = true;
+      }
+    }
+
+    function handlePalletPointerMove(event) {
+      const hit = getPalletHitFromPointerEvent(event);
+
+      if (palletPointerDownHit && event.pointerId === palletPointerDownPointerId) {
+        if (!hit || !isSamePalletHit(palletPointerDownHit, hit)) {
+          cancelPalletPointerDown();
+          hideRotatePalletButton();
+          return;
+        }
+
+        showRotatePalletButton(hit, event.clientX, event.clientY);
+        return;
+      }
+
+      if (!hit) {
+        hideRotatePalletButton();
+        return;
+      }
+
+      showRotatePalletButton(hit, event.clientX, event.clientY);
+    }
+
+    function handlePalletPointerDown(event) {
+      if (event.button !== undefined && event.button !== 0) return;
+
+      const hit = getPalletHitFromPointerEvent(event);
+
+      if (!hit) {
+        resetPalletPointerDownState(event);
+        hideRotatePalletButton();
+        return;
+      }
+
+      palletPointerDownHit = hit;
+      palletPointerDownPointerId = event.pointerId;
+      palletPointerDownCancelled = false;
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+      showRotatePalletButton(hit, event.clientX, event.clientY);
+      event.preventDefault();
+    }
+
+    function handlePalletPointerUp(event) {
+      if (!palletPointerDownHit || event.pointerId !== palletPointerDownPointerId) return;
+
+      const startHit = palletPointerDownHit;
+      const wasCancelled = palletPointerDownCancelled;
+      const endHit = getPalletHitFromPointerEvent(event);
+      resetPalletPointerDownState(event);
+
+      if (!wasCancelled && isSamePalletHit(startHit, endHit)) {
+        showRotatePalletButton(endHit, event.clientX, event.clientY);
+        rotatePalletFromHit(endHit);
+        return;
+      }
+
+      if (endHit) {
+        showRotatePalletButton(endHit, event.clientX, event.clientY);
+      } else {
+        hideRotatePalletButton();
+      }
+    }
+
+    function handlePalletPointerCancel(event) {
+      cancelPalletPointerDown();
+      resetPalletPointerDownState(event);
+      hideRotatePalletButton();
+    }
+
+    function handlePalletPointerLeave(event) {
+      if (palletPointerDownHit) {
+        cancelPalletPointerDown();
+      } else {
+        hideRotatePalletButton();
+      }
     }
 
     function placementHasSupportedChildren(bin, placement) {
@@ -3137,11 +3308,7 @@
       return 'updated';
     }
 
-    function handleRotatePalletClick(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const hit = hoveredPalletHit || els.rotatePalletBtn._palletHit;
+    function rotatePalletFromHit(hit) {
       if (!hit?.bin || !hit?.placement) return;
 
       const { bin, placement } = hit;
@@ -3168,6 +3335,12 @@
 
       setRotationFeedback(`Pallen roterades manuellt och låstes till ${formatNumberForRowInput(rotated.L)}x${formatNumberForRowInput(rotated.W)} cm.${suffix}`, true);
       update();
+    }
+
+    function handleRotatePalletClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      rotatePalletFromHit(hoveredPalletHit || els.rotatePalletBtn._palletHit);
     }
 
     function showEmpty20Container(message = "Inga pallar angivna.") {
@@ -3232,7 +3405,6 @@
 
         if (tooTallItems.length > 0) {
           messages.push('<span class="warning">Out of gauge! Kontakta Adrian Keuneke asap!</span>');
-          messages.push(`För höga pallar visualiseras separat (${tooTallItems.length} st).`);
         }
 
         if (nonHeightUnplaced.length > 0) {
@@ -3243,7 +3415,6 @@
           messages.push('<span class="warning">Ingen pallrad fick plats i vald containertyp.</span>');
         }
 
-        messages.push(getModeConfig(mode).note);
         els.msgBox.innerHTML = messages.join('<br>');
 
         if (tooTallItems.length) {
@@ -3258,31 +3429,7 @@
 
       els.reqText.innerText = formatContainerCounts(solution.bins, mode);
 
-      const grouped = groupImportedPallets(pallets);
       const notes = [];
-
-      notes.push(`Pallar från rader: ${pallets.length} st fördelade på ${rowDefinitions.length} giltiga rad(er).`);
-      notes.push(`Riktig 3D-packning aktiv: ${getContainerOrder(mode).map(formatContainerType).join(', ')} testas.`);
-      notes.push(getModeConfig(mode).note);
-
-      if (wantedLayers > 1) {
-        notes.push('Stapling tillåts bara när pallen både får stöd underifrån och klarar vald lagergräns.');
-      }
-
-      grouped.forEach(g => {
-        const largestType = getLargestContainerType(mode);
-        const middleType = getContainerOrder(mode)[1] || largestType;
-        const allowedMiddle = getAllowedLayersForHeight(g.H, wantedLayers, CONTAINERS[middleType]);
-        const allowedLargest = getAllowedLayersForHeight(g.H, wantedLayers, CONTAINERS[largestType]);
-
-        if (wantedLayers > 1 && allowedLargest < wantedLayers) {
-          notes.push(`${g.L}x${g.W}x${g.H}: ${formatContainerType(largestType)} klarar max ${allowedLargest} lager p.g.a. dörr/takhöjd.`);
-        } else if (wantedLayers > 1 && allowedMiddle < wantedLayers) {
-          notes.push(`${g.L}x${g.W}x${g.H}: ${formatContainerType(middleType)} klarar max ${allowedMiddle} lager, ${formatContainerType(largestType)} testas också.`);
-        }
-      });
-
-      notes.push('Optimering: 3D extreme points + multi-start + bin-eliminering + pairwise merge.');
 
       const widthWarningCount = solutionWidthWarningCount(solution);
       if (widthWarningCount > 0) {
@@ -3290,21 +3437,16 @@
       }
 
       if (nonHeightUnplaced.length > 0) {
-        notes.push(`⚠️ ${nonHeightUnplaced.length} pall(ar) kunde inte placeras i vald containertyp.`);
-      } else if (packableItems.length > 0) {
-        notes.push('Alla pallar inom valda container-/dörr-/toppmått placerades.');
+        notes.push(`<span class="warning">${nonHeightUnplaced.length} pall(ar) kunde inte placeras.</span>`);
       }
 
       if (tooTallItems.length > 0) {
-        notes.push(`<span class="warning">Out of gauge: ${tooTallItems.length} för höga pall(ar) visualiseras separat.</span>`);
+        notes.push(`<span class="warning">Out of gauge: ${tooTallItems.length} pall(ar).</span>`);
       }
 
-
-      const fillText = solution.bins
-        .map((bin, i) => `#${i + 1} ${formatContainerType(bin.type)}: ${(fillRatio(bin) * 100).toFixed(1)}% nominell volymfyllnad`)
-        .join('<br>');
-
-      els.msgBox.innerHTML = notes.join('<br>') + '<br>' + fillText;
+      els.msgBox.innerHTML = notes.length
+        ? notes.join('<br>')
+        : '<span class="success">Alla pallar placerades.</span>';
 
       build3DSceneFromSolution(visualSolution);
       autoFitCamera();
