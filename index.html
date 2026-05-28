@@ -572,7 +572,7 @@
 
   <div class="sidebar">
     <h1>Eriks Pallpacknings-Kalkylator 3000</h1>
-    <div class="app-version">Extreme Point Heuristic // Version 7.0.4</div>
+    <div class="app-version">Extreme Point Heuristic // Version 7.1.0</div>
 
     <div class="input-panel">
       <div class="field">
@@ -2264,7 +2264,9 @@
       bin.items.push(placement.item);
       bin.usedVolume += placement.item.volume;
       bin.overWidthWarning = bin.overWidthWarning || placement.isOverWidth;
-      bin.overHeightWarning = bin.overHeightWarning || placementExceedsNominalHeight(placement, bin.box);
+      bin.overHeightWarning = bin.overHeightWarning || (
+        placementExceedsNominalHeight(placement, bin.box) && !bin.box?.topLoad
+      );
     }
 
     function betterCandidate(a, b, bins) {
@@ -2605,7 +2607,7 @@
         items: [...plan.items],
         usedVolume: plan.usedVolume,
         overWidthWarning: placements.some(p => placementExceedsNominalWidth(p, box)),
-        overHeightWarning: placements.some(p => placementExceedsNominalHeight(p, box))
+        overHeightWarning: placements.some(p => placementExceedsNominalHeight(p, box) && !box?.topLoad)
       };
     }
 
@@ -2962,11 +2964,32 @@
     }
 
     function binHasHeightWarning(bin) {
-      return Boolean(bin.overHeightWarning) || bin.placements.some(p => placementExceedsNominalHeight(p, bin.box));
+      const box = bin?.box;
+      const storedWarning = Boolean(bin?.overHeightWarning) && !box?.topLoad;
+      return storedWarning || (bin?.placements || []).some(p => (
+        placementExceedsNominalHeight(p, box) && !box?.topLoad
+      ));
+    }
+
+    function placementExceedsOpenTopHeight(placement, box) {
+      return Boolean(box?.topLoad) && placementExceedsNominalHeight(placement, box);
+    }
+
+    function binOpenTopOverheightCount(bin) {
+      if (!bin?.box?.topLoad) return 0;
+      return (bin.placements || []).filter(p => placementExceedsOpenTopHeight(p, bin.box)).length;
+    }
+
+    function binHasOpenTopOverheightInfo(bin) {
+      return binOpenTopOverheightCount(bin) > 0;
+    }
+
+    function solutionOpenTopOverheightCount(solution = lastRenderedSolution) {
+      return (solution?.bins || []).reduce((sum, bin) => sum + binOpenTopOverheightCount(bin), 0);
     }
 
     function binHasWidthWarning(bin) {
-      return Boolean(bin.overWidthWarning) || bin.placements.some(p => placementExceedsNominalWidth(p, bin.box));
+      return Boolean(bin?.overWidthWarning) || (bin?.placements || []).some(p => placementExceedsNominalWidth(p, bin.box));
     }
 
     function addFlatRackSideWarningLines(group, box) {
@@ -3377,6 +3400,10 @@
     }
 
     function addExportBackPanels(group, box, view = '3d') {
+      if (box?.flatRack) {
+        return;
+      }
+
       const addShortBack = () => addExportPlanePanel(
         group,
         box.W,
@@ -3886,9 +3913,14 @@
 
       const notes = [];
       const widthWarningCount = solutionWidthWarningCount(solution);
+      const openTopOverheightCount = solutionOpenTopOverheightCount(solution);
 
       if (widthWarningCount > 0) {
         notes.push(`<span class="warning">Överbredd på flat rack: ${widthWarningCount} pall(ar).</span>`);
+      }
+
+      if (openTopOverheightCount > 0) {
+        notes.push(`<span>Open top överhöjd: ${openTopOverheightCount} pall(ar).</span>`);
       }
 
       if (solution.unplaced?.length) {
@@ -4407,7 +4439,9 @@
 
     function refreshBinWarningFlags(bin) {
       bin.overWidthWarning = bin.placements.some(p => placementExceedsNominalWidth(p, bin.box));
-      bin.overHeightWarning = bin.placements.some(p => placementExceedsNominalHeight(p, bin.box));
+      bin.overHeightWarning = bin.placements.some(p => (
+        placementExceedsNominalHeight(p, bin.box) && !bin.box?.topLoad
+      ));
     }
 
     function applyManualDragDelta(state, dx, dy, dropPlacement = null) {
@@ -4964,8 +4998,13 @@
       const notes = [];
 
       const widthWarningCount = solutionWidthWarningCount(solution);
+      const openTopOverheightCount = solutionOpenTopOverheightCount(solution);
       if (widthWarningCount > 0) {
         notes.push(`<span class="warning">Överbredd på flat rack: ${widthWarningCount} pall(ar).</span>`);
+      }
+
+      if (openTopOverheightCount > 0) {
+        notes.push(`<span>Open top överhöjd: ${openTopOverheightCount} pall(ar).</span>`);
       }
 
       if (nonHeightUnplaced.length > 0) {
@@ -5086,7 +5125,7 @@
         .replace(/'/g, '&#039;');
     }
 
-    const PDF_TITLE = 'Loading Plan';
+    const PDF_TITLE = 'Pallet Packing Report';
     const PDF_LOCALE = 'en-US';
 
     function normalizePdfText(value) {
@@ -5123,6 +5162,44 @@
     function formatPdfFileTimestamp(date) {
       const pad = value => String(value).padStart(2, '0');
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}, ${pad(date.getHours())}-${pad(date.getMinutes())}`;
+    }
+
+    function loadImageDataUrl(src) {
+      return new Promise(resolve => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+
+        image.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth || image.width;
+            canvas.height = image.naturalHeight || image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            resolve({
+              dataUrl: canvas.toDataURL('image/png'),
+              width: canvas.width,
+              height: canvas.height
+            });
+          } catch (error) {
+            console.warn('Could not prepare PDF logo image.', error);
+            resolve(null);
+          }
+        };
+
+        image.onerror = () => resolve(null);
+        image.src = src;
+      });
+    }
+
+    function loadPdfLogoImage() {
+      return loadImageDataUrl('Bertling-logotype-transparent.png');
+    }
+
+    function drawPdfLogo(doc, logo, x, y, w, h) {
+      if (!logo?.dataUrl) return;
+      const box = fitImageInBox(logo.width, logo.height, x, y, w, h);
+      doc.addImage(logo.dataUrl, 'PNG', box.x, box.y, box.w, box.h, undefined, 'FAST');
     }
 
     function getVisibleCapacityRowsForPdf() {
@@ -5174,14 +5251,15 @@
     }
 
     function getPdfStatusForBin(bin) {
-      const warnings = [];
+      const status = [];
 
-      if (bin.visualOnly) warnings.push('Visual warning');
-      if (binHasHeightWarning(bin)) warnings.push('Height');
-      if (binHasWidthWarning(bin)) warnings.push('Overwidth');
-      if (!warnings.length) warnings.push('OK');
+      if (bin.visualOnly) status.push('Visual warning');
+      if (binHasHeightWarning(bin)) status.push('Height warning');
+      if (binHasOpenTopOverheightInfo(bin)) status.push('Open top overheight');
+      if (binHasWidthWarning(bin)) status.push('Overwidth');
+      if (!status.length) status.push('OK');
 
-      return warnings.join(', ');
+      return status.join(', ');
     }
 
     function getSolutionRowsForPdf(solution = lastRenderedSolution) {
@@ -5201,10 +5279,12 @@
 
       const notes = [];
       const widthWarnings = solutionWidthWarningCount(solution);
+      const openTopOverheight = solutionOpenTopOverheightCount(solution);
       const unplaced = solution.unplaced?.length || 0;
       const heightWarnings = solution.bins?.filter(binHasHeightWarning).length || 0;
 
       if (widthWarnings > 0) notes.push(`Flat rack overwidth: ${widthWarnings} pallet(s).`);
+      if (openTopOverheight > 0) notes.push(`Open top overheight: ${openTopOverheight} pallet(s).`);
       if (heightWarnings > 0) notes.push(`Height warning: ${heightWarnings} container(s).`);
       if (unplaced > 0) notes.push(`Unplaced pallets: ${unplaced}.`);
 
@@ -5217,6 +5297,7 @@
       const modeConfig = getModeConfig();
       const unplaced = solution?.unplaced?.length || 0;
       const widthWarnings = solution ? solutionWidthWarningCount(solution) : 0;
+      const openTopOverheight = solution ? solutionOpenTopOverheightCount(solution) : 0;
       const heightWarnings = solution?.bins?.filter(binHasHeightWarning).length || 0;
       const notes = getPdfNotesForSolution(solution);
       const summaryRows = [
@@ -5228,6 +5309,7 @@
         ['Stackable', els.stack.checked ? `Yes, ${getWantedLayers()} layer(s)` : 'No'],
         ['Unplaced', `${unplaced}`],
         ['Overwidth', `${widthWarnings} pallet(s)`],
+        ['Open top overheight', `${openTopOverheight} pallet(s)`],
         ['Height warnings', `${heightWarnings} container(s)`],
         ...getVisibleCapacityRowsForPdf()
       ];
@@ -5582,9 +5664,15 @@
           showLabels: true,
           showDimensionGuides: true
         }),
-        top: await captureSingleContainerPdfView(singleSolution, 'top'),
-        sideA: await captureSingleContainerPdfView(singleSolution, 'sideA'),
-        sideB: await captureSingleContainerPdfView(singleSolution, 'sideB')
+        top: await captureSingleContainerPdfView(singleSolution, 'top', {
+          showDimensionGuides: true
+        }),
+        sideA: await captureSingleContainerPdfView(singleSolution, 'sideA', {
+          showDimensionGuides: true
+        }),
+        sideB: await captureSingleContainerPdfView(singleSolution, 'sideB', {
+          showDimensionGuides: true
+        })
       };
     }
 
@@ -5600,16 +5688,24 @@
       renderer.render(scene, camera);
     }
 
-    function addPdfHeader(doc, title, subtitle = '') {
+    function addPdfHeader(doc, title, subtitle = '', options = {}) {
       const pageW = doc.internal.pageSize.getWidth();
+      const logo = options.logo || null;
       doc.setFillColor(11, 16, 32);
       doc.rect(0, 0, pageW, 18, 'F');
       doc.setFillColor(106, 166, 255);
       doc.rect(0, 17.5, pageW, 0.5, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text(normalizePdfText(title), 10, 11.5);
+
+      if (logo) {
+        drawPdfLogo(doc, logo, 10, 3.2, 42, 11.6);
+      }
+
+      if (title) {
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text(normalizePdfText(title), logo ? 56 : 10, 11.5);
+      }
 
       if (subtitle) {
         doc.setTextColor(169, 176, 214);
@@ -5718,7 +5814,7 @@
         doc.addPage('a4', 'landscape');
         doc.setFillColor(246, 248, 252);
         doc.rect(0, 0, pageW, pageH, 'F');
-        addPdfHeader(doc, `${PDF_TITLE} - Details`);
+        addPdfHeader(doc, 'Details');
         cy = 26;
         drawHeader();
       };
@@ -5781,7 +5877,7 @@
       doc.addPage('a4', 'landscape');
       doc.setFillColor(246, 248, 252);
       doc.rect(0, 0, pageW, pageH, 'F');
-      addPdfHeader(doc, `${PDF_TITLE} - Container ${idx + 1}`, `Exported ${timestamp}`);
+      addPdfHeader(doc, `Container ${idx + 1}`, `Exported ${timestamp}`);
       drawContainerSummaryLine(doc, capture.bin, idx, 23);
 
       drawPdfImagePanel(doc, '3D view', capture.threeD, 10, 34, 137, 78);
@@ -5824,6 +5920,7 @@
         const now = new Date();
         const timestamp = formatPdfDisplayTimestamp(now);
         const fileStamp = formatPdfFileTimestamp(now);
+        const pdfLogo = await loadPdfLogoImage();
         const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
         doc.setProperties?.({ title: PDF_TITLE, subject: PDF_TITLE });
 
@@ -5832,7 +5929,7 @@
 
         doc.setFillColor(246, 248, 252);
         doc.rect(0, 0, pageW, pageH, 'F');
-        addPdfHeader(doc, PDF_TITLE, `Exported ${timestamp}`);
+        addPdfHeader(doc, '', `Exported ${timestamp}`, { logo: pdfLogo });
 
         drawInfoPanel(doc, 10, 25, 78, getSummaryRowsForPdf(exportSolution));
         drawPdfImagePanel(doc, 'Overview', overview, 94, 25, 193, 154);
@@ -5840,7 +5937,7 @@
         doc.addPage('a4', 'landscape');
         doc.setFillColor(246, 248, 252);
         doc.rect(0, 0, pageW, pageH, 'F');
-        addPdfHeader(doc, `${PDF_TITLE} - Details`, `Exported ${timestamp}`);
+        addPdfHeader(doc, 'Details', `Exported ${timestamp}`);
 
         let y = 28;
         y = drawPdfTable(
@@ -5869,7 +5966,7 @@
             doc.addPage('a4', 'landscape');
             doc.setFillColor(246, 248, 252);
             doc.rect(0, 0, pageW, pageH, 'F');
-            addPdfHeader(doc, `${PDF_TITLE} - Notes`, `Exported ${timestamp}`);
+            addPdfHeader(doc, 'Notes', `Exported ${timestamp}`);
             y = 28;
           }
 
@@ -5897,7 +5994,7 @@
           addPdfFooter(doc, i, pageCount);
         }
 
-        doc.save(`loading-plan ${fileStamp}.pdf`);
+        doc.save(`pallet-packing-report ${fileStamp}.pdf`);
         els.importMsg.innerHTML = '<span class="success">PDF exported.</span>';
       } finally {
         restoreSceneAfterPdfExport(originalSolution, originalCameraState, originalManualSolution);
