@@ -509,11 +509,34 @@
       box-shadow: 0 8px 22px rgba(0,0,0,0.35);
       user-select: none;
       white-space: nowrap;
-      pointer-events: none;
+      pointer-events: auto;
     }
 
     .rotate-pallet-button.is-visible {
       display: block;
+    }
+
+    .manual-mode-box {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 184, 107, 0.55);
+      background: rgba(255, 184, 107, 0.10);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    }
+
+    .manual-mode-title {
+      margin-bottom: 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--warn);
+    }
+
+    .manual-mode-text {
+      display: none;
+    }
+
+    .manual-mode-actions {
+      margin-top: 10px;
     }
 
     @media (max-width: 800px) {
@@ -533,8 +556,8 @@
 <body>
 
   <div class="sidebar">
-    <h1>📦Eriks Pallpacknings-Kalkylator 3000</h1>
-    <div class="app-version">Version 6.3.5</div>
+    <h1>Eriks Pallpacknings-Kalkylator 3000</h1>
+    <div class="app-version">Extreme Point Heuristic // Version 6.5.1</div>
 
     <div class="input-panel">
       <div class="field">
@@ -614,6 +637,14 @@
     </div>
 
     <div id="msgBox" class="note"></div>
+
+    <div id="manualModeBox" class="manual-mode-box" hidden>
+      <div class="manual-mode-title">Manuellt läge</div>
+      <div id="manualModeText" class="manual-mode-text" hidden></div>
+      <div class="action-row manual-mode-actions">
+        <button id="autoPackBtn" class="primary-button" type="button">Räkna om automatiskt</button>
+      </div>
+    </div>
   </div>
 
   <div id="canvas-container">
@@ -854,6 +885,9 @@
       cap20: document.getElementById('cap20'),
       volTotal: document.getElementById('volTotal'),
       msgBox: document.getElementById('msgBox'),
+      manualModeBox: document.getElementById('manualModeBox'),
+      manualModeText: document.getElementById('manualModeText'),
+      autoPackBtn: document.getElementById('autoPackBtn'),
       toggleCamBtn: document.getElementById('toggleCam'),
       rotatePalletBtn: document.getElementById('rotatePalletBtn'),
       loadingOverlay: document.getElementById('loadingOverlay'),
@@ -893,12 +927,25 @@
     let hideLoadingTimer = null;
     let lastRenderedSolution = null;
     let interactivePalletMeshes = [];
+    let interactiveDropBins = [];
     let hoveredPalletHit = null;
+    let activeEquipmentMode = getEquipmentMode();
+    const manualModeStates = new Map();
+    let manualMode = false;
+    let manualSolution = null;
+    let manualModeInputDirty = false;
+    const PALLET_COLOR_A = 0x4a9eff;
+    const PALLET_COLOR_B = 0x7bd89c;
+    const PALLET_HOVER_COLOR = 0xffd166;
+    const DRAG_START_DISTANCE_PX = 5;
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
     let palletPointerDownHit = null;
     let palletPointerDownPointerId = null;
     let palletPointerDownCancelled = false;
+    let palletPointerDownClientX = 0;
+    let palletPointerDownClientY = 0;
+    let palletDragState = null;
 
     els.toggleCamBtn.addEventListener('click', () => {
       freeCam = !freeCam;
@@ -952,6 +999,7 @@
       event.stopPropagation();
     });
     els.rotatePalletBtn.addEventListener('click', handleRotatePalletClick);
+    els.autoPackBtn.addEventListener('click', resetManualModeAndRepack);
 
     window.addEventListener('resize', () => {
       camera.aspect = els.container.clientWidth / els.container.clientHeight;
@@ -994,13 +1042,8 @@
 
       if (min !== null) input.min = min;
 
-      input.addEventListener('input', () => {
-        update();
-      });
-
-      input.addEventListener('change', () => {
-        update();
-      });
+      input.addEventListener('input', handlePalletRowsChanged);
+      input.addEventListener('change', handlePalletRowsChanged);
 
       return input;
     }
@@ -1016,9 +1059,7 @@
       input.checked = Boolean(value);
       input.setAttribute('aria-label', 'Lås rotation');
 
-      input.addEventListener('change', () => {
-        update();
-      });
+      input.addEventListener('change', handlePalletRowsChanged);
 
       label.appendChild(input);
       return label;
@@ -1104,7 +1145,7 @@
           addPalletRow({ count: 1 }, false);
         }
 
-        update();
+        handlePalletRowsChanged();
       });
 
       row.appendChild(countInput);
@@ -1122,7 +1163,7 @@
       }
 
       if (shouldUpdate) {
-        update();
+        handlePalletRowsChanged();
       }
 
       return row;
@@ -1258,7 +1299,7 @@
       const totalCount = parsed.reduce((sum, row) => sum + row.count, 0);
       els.importMsg.innerHTML = `<span class="success">Importerade ${totalCount} pall(ar) till ${parsed.length} rad(er).</span>`;
 
-      update();
+      handlePalletRowsChanged();
     }
 
 
@@ -1534,7 +1575,7 @@
 
       const totalCount = importedRows.reduce((sum, row) => sum + row.count, 0);
       els.importMsg.innerHTML = `<span class="success">Importerade ${totalCount} pall(ar) från CSV (${importedRows.length} rad(er)).</span>`;
-      update();
+      handlePalletRowsChanged();
     }
 
     function importConfigurationCsvFile() {
@@ -1661,8 +1702,8 @@
       const maxY = bounds.yMax - W;
 
       return {
-        x: Math.max(bounds.xMin, Math.min(desiredX, maxX)),
-        y: Math.max(bounds.yMin, Math.min(desiredY, maxY))
+        x: clamp(desiredX, bounds.xMin, maxX),
+        y: clamp(desiredY, bounds.yMin, maxY)
       };
     }
 
@@ -1940,8 +1981,15 @@
       );
     }
 
-    function findSupportingPlacement(bin, x, y, z, L, W) {
+    function placementIsIgnored(p, options = {}) {
+      if (options.ignorePlacement && p === options.ignorePlacement) return true;
+      const ignored = options.ignorePlacements;
+      return Boolean(ignored && typeof ignored.has === 'function' && ignored.has(p));
+    }
+
+    function findSupportingPlacement(bin, x, y, z, L, W, options = {}) {
       for (const p of bin.placements) {
+        if (placementIsIgnored(p, options)) continue;
         if (Math.abs((p.z + p.H) - z) > 1e-6) continue;
 
         if (
@@ -2072,7 +2120,7 @@
       const probe = { x, y, z, L, W, H: item.H };
 
       for (const p of bin.placements) {
-        if (options.ignorePlacement && p === options.ignorePlacement) continue;
+        if (placementIsIgnored(p, options)) continue;
         if (boxesIntersect3D(probe, p)) return null;
       }
 
@@ -2080,7 +2128,7 @@
       let layer = 1;
 
       if (z > 0) {
-        support = findSupportingPlacement(bin, x, y, z, L, W);
+        support = findSupportingPlacement(bin, x, y, z, L, W, options);
         if (!support) return null;
         layer = (support.layer ?? 1) + 1;
       }
@@ -2091,6 +2139,26 @@
       return { support, layer, overWidth };
     }
 
+    function getPlacementYEdgeMetrics(box, placement) {
+      if (isFlatRackOverWidth(box, placement.W)) {
+        return { edgeDistance: 0, edgeBias: 0 };
+      }
+
+      let minY = 0;
+      let maxY = box.W - placement.W;
+
+      if (openTopPlacementNeedsRoofOpeningClearance(box, placement.item || placement)) {
+        const bounds = getRoofOpeningBounds(box);
+        minY = bounds.yMin;
+        maxY = bounds.yMax - placement.W;
+      }
+
+      return {
+        edgeDistance: Math.min(Math.abs(placement.y - minY), Math.abs(maxY - placement.y)),
+        edgeBias: Math.abs(placement.y - minY)
+      };
+    }
+
     function placementScore(bin, placement, heuristic) {
       const remX = bin.box.L - (placement.x + placement.L);
       const remY = bin.box.W - (placement.y + placement.W);
@@ -2098,25 +2166,25 @@
       const contact = contactScore3D(bin, placement);
       const floorPenalty = placement.z === 0 ? 0 : 1;
       const overWidthPenalty = placementExceedsNominalWidth(placement, bin.box) ? 1 : 0;
-      const centeredYDistance = Math.abs((placement.y + placement.W / 2) - (bin.box.W / 2));
+      const { edgeDistance, edgeBias } = getPlacementYEdgeMetrics(bin.box, placement);
 
       if (heuristic === 'BLF') {
-        return [overWidthPenalty, placement.z, placement.x, centeredYDistance, remY, remX, remZ, -contact];
+        return [overWidthPenalty, placement.z, placement.x, edgeDistance, edgeBias, remY, remX, remZ, -contact];
       }
 
       if (heuristic === 'TIGHT') {
-        return [overWidthPenalty, placement.z, Math.min(Math.max(remX, 0), Math.max(remY, 0)), Math.max(remX, remY), remZ, -contact, placement.x, centeredYDistance];
+        return [overWidthPenalty, placement.z, edgeDistance, edgeBias, Math.min(Math.max(remX, 0), Math.max(remY, 0)), Math.max(remX, remY), remZ, -contact, placement.x];
       }
 
       if (heuristic === 'SUPPORT') {
-        return [overWidthPenalty, floorPenalty, placement.z, -contact, remZ, remX + Math.max(remY, 0), placement.x, centeredYDistance];
+        return [overWidthPenalty, floorPenalty, placement.z, edgeDistance, edgeBias, -contact, remZ, remX + Math.max(remY, 0), placement.x];
       }
 
       if (heuristic === 'WALL') {
-        return [overWidthPenalty, placement.z, -contact, Math.max(remY, 0), remX, remZ, placement.x, centeredYDistance];
+        return [overWidthPenalty, placement.z, -contact, edgeDistance, edgeBias, Math.max(remY, 0), remX, remZ, placement.x];
       }
 
-      return [overWidthPenalty, placement.z, placement.x, centeredYDistance, -contact];
+      return [overWidthPenalty, placement.z, placement.x, edgeDistance, edgeBias, -contact];
     }
 
     function findBestPlacementInBin(bin, item, wantedLayers, heuristic) {
@@ -2671,9 +2739,6 @@
 
     function addDoorDimensionLines(group, box) {
       if (box.noDoor) {
-        const label = createTextLabel('Öppet flak / ingen dörr', '#c28a55', 230, 24);
-        label.position.set(-box.L / 2, box.H + 16, box.W / 2 + 14);
-        group.add(label);
         return;
       }
 
@@ -2815,17 +2880,23 @@
       const xRight = box.L / 2;
       const zBack = -box.W / 2;
       const zFront = box.W / 2;
-      const yLevels = [6, Math.max(10, box.H + 2)];
+      const yBase = 6;
+      const yStubTop = yBase + Math.max(10, box.H * 0.10);
 
-      yLevels.forEach(y => {
+      [zBack, zFront].forEach(z => {
         addLineToGroup(group, [
-          new THREE.Vector3(xLeft, y, zBack),
-          new THREE.Vector3(xRight, y, zBack)
+          new THREE.Vector3(xLeft, yBase, z),
+          new THREE.Vector3(xRight, yBase, z)
         ], mat);
 
         addLineToGroup(group, [
-          new THREE.Vector3(xLeft, y, zFront),
-          new THREE.Vector3(xRight, y, zFront)
+          new THREE.Vector3(xLeft, yBase, z),
+          new THREE.Vector3(xLeft, yStubTop, z)
+        ], mat);
+
+        addLineToGroup(group, [
+          new THREE.Vector3(xRight, yBase, z),
+          new THREE.Vector3(xRight, yStubTop, z)
         ], mat);
       });
     }
@@ -2992,12 +3063,207 @@
       };
     }
 
+    function uniqueItemsByBaseId(items) {
+      const seen = new Set();
+      const out = [];
+
+      for (const item of items) {
+        const key = item.baseId || `${item.L}|${item.W}|${item.H}|${out.length}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(item);
+      }
+
+      return out;
+    }
+
+    function getUnplacedDisplayOrientation(item) {
+      if (item?.manualUnplacedOrientation) {
+        return { ...item.manualUnplacedOrientation };
+      }
+
+      const options = getItemOrientations(item);
+      return [...options].sort((a, b) => (Math.max(a.L, a.W) - Math.max(b.L, b.W)) || (a.L * a.W - b.L * b.W))[0] || { L: item.L, W: item.W, kind: 'A' };
+    }
+
+    function buildUnplacedPlateLayout(items) {
+      const margin = 26;
+      const gap = 18;
+      const minPlateLength = 420;
+      const targetRowLength = Math.max(
+        minPlateLength,
+        ...getContainerDisplayOrder(getEquipmentMode()).map(type => CONTAINERS[type]?.L || 0),
+        ...items.map(item => Math.min(Math.max(item.L, item.W), 1200))
+      );
+
+      const placements = [];
+      let x = margin;
+      let y = margin;
+      let rowHeight = 0;
+      let maxX = margin;
+      let maxY = margin;
+
+      const ordered = [...items].sort((a, b) => b.area - a.area || b.volume - a.volume || b.H - a.H);
+
+      for (const item of ordered) {
+        const opt = getUnplacedDisplayOrientation(item);
+
+        if (placements.length && x + opt.L + margin > targetRowLength) {
+          x = margin;
+          y += rowHeight + gap;
+          rowHeight = 0;
+        }
+
+        placements.push({
+          item,
+          x,
+          y,
+          L: opt.L,
+          W: opt.W,
+          H: item.H,
+          kind: opt.kind
+        });
+
+        maxX = Math.max(maxX, x + opt.L);
+        maxY = Math.max(maxY, y + opt.W);
+        rowHeight = Math.max(rowHeight, opt.W);
+        x += opt.L + gap;
+      }
+
+      return {
+        plateL: Math.max(minPlateLength, maxX + margin),
+        plateW: Math.max(180, maxY + margin),
+        placements
+      };
+    }
+
+    function addPlateBorder(group, plateL, plateW, material) {
+      const y = 1.5;
+      const xLeft = -plateL / 2;
+      const xRight = plateL / 2;
+      const zBack = -plateW / 2;
+      const zFront = plateW / 2;
+
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft, y, zBack),
+        new THREE.Vector3(xRight, y, zBack),
+        new THREE.Vector3(xRight, y, zFront),
+        new THREE.Vector3(xLeft, y, zFront),
+        new THREE.Vector3(xLeft, y, zBack)
+      ], material);
+    }
+
+    function addDiagonalPlateLines(group, plateL, plateW) {
+      const mat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.42 });
+      const step = 58;
+      const y = 2.2;
+
+      for (let t = -plateW; t <= plateL; t += step) {
+        const z1 = Math.max(0, -t);
+        const z2 = Math.min(plateW, plateL - t);
+        if (z2 < z1) continue;
+
+        const x1 = t + z1;
+        const x2 = t + z2;
+
+        addLineToGroup(group, [
+          new THREE.Vector3(x1 - plateL / 2, y, z1 - plateW / 2),
+          new THREE.Vector3(x2 - plateL / 2, y, z2 - plateW / 2)
+        ], mat);
+      }
+    }
+
+    function addUnplacedPalletPlate(startZ, items, solution = lastRenderedSolution) {
+      const unplacedItems = uniqueItemsByBaseId(items || []);
+      if (!unplacedItems.length) return 0;
+
+      const layout = buildUnplacedPlateLayout(unplacedItems);
+      const group = new THREE.Group();
+      group.position.z = startZ;
+      mainGroup.add(group);
+
+      const label = createTextLabel('Ej placerade', '#ffb86b', 190, 24);
+      label.position.set(-layout.plateL / 2, 58, -layout.plateW / 2);
+      group.add(label);
+
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(layout.plateL, layout.plateW),
+        new THREE.MeshBasicMaterial({ color: 0x221a20, side: THREE.DoubleSide, transparent: true, opacity: 0.94 })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      group.add(floor);
+
+      const borderMat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.85 });
+      addPlateBorder(group, layout.plateL, layout.plateW, borderMat);
+      addDiagonalPlateLines(group, layout.plateL, layout.plateW);
+
+      const matA = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_A, transparent: true, opacity: 0.86 });
+      const matB = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_B, transparent: true, opacity: 0.86 });
+
+      layout.placements.forEach(p => {
+        const placement = {
+          baseId: p.item?.baseId,
+          x: p.x,
+          y: p.y,
+          z: 0,
+          L: p.L,
+          W: p.W,
+          H: p.H,
+          kind: p.kind,
+          layer: 1,
+          supportId: null,
+          isUnplaced: true,
+          item: p.item
+        };
+
+        const geo = new THREE.BoxGeometry(
+          Math.max(placement.L - 2, 2),
+          Math.max(placement.H - 2, 2),
+          Math.max(placement.W - 2, 2)
+        );
+
+        const mat = (placement.kind === 'A' ? matA : matB).clone();
+        mat.userData = {
+          baseColor: mat.color?.getHex ? mat.color.getHex() : null,
+          baseOpacity: mat.opacity
+        };
+
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.userData = {
+          kind: 'pallet',
+          isUnplaced: true,
+          placement,
+          item: p.item,
+          solution,
+          mesh,
+          plate: { plateL: layout.plateL, plateW: layout.plateW },
+          plateGroup: group
+        };
+        interactivePalletMeshes.push(mesh);
+        window.__interactivePalletMeshes = interactivePalletMeshes;
+
+        updateUnplacedPalletMeshPosition(mesh, placement, mesh.userData.plate);
+        group.add(mesh);
+
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 0.28 })
+        );
+        edges.userData = { kind: 'palletEdges' };
+        mesh.add(edges);
+      });
+
+      return layout.plateW + 250;
+    }
+
     function build3DSceneFromSolution(solution) {
       solution = centerFlatRackSolutionPlacementsAlongLength(cloneSolution(solution));
 
       clearSceneGroup();
       interactivePalletMeshes = [];
+      interactiveDropBins = [];
       window.__interactivePalletMeshes = interactivePalletMeshes;
+      window.__interactiveDropBins = interactiveDropBins;
       lastRenderedSolution = solution;
       hideRotatePalletButton();
 
@@ -3010,6 +3276,9 @@
         const group = new THREE.Group();
         group.position.z = currentZ;
         mainGroup.add(group);
+
+        interactiveDropBins.push({ bin, box, group, solution });
+        window.__interactiveDropBins = interactiveDropBins;
 
         const labelText = `${formatContainerType(bin.type)}${bin.visualOnly ? ' - höjdvarning' : ''} (${box.L}x${box.W}x${box.H}cm)`;
         const label = createTextLabel(labelText);
@@ -3043,8 +3312,8 @@
         addDoorDimensionLines(group, box);
         addTopOpeningLines(group, box);
 
-        const matA = new THREE.MeshLambertMaterial({ color: 0x4a9eff });
-        const matB = new THREE.MeshLambertMaterial({ color: 0x7bd89c });
+        const matA = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_A });
+        const matB = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_B });
 
         bin.placements.forEach(p => {
           const geo = new THREE.BoxGeometry(
@@ -3054,7 +3323,7 @@
           );
 
           const mat = (p.kind === 'A' ? matA : matB).clone();
-          mat.userData = { baseColor: mat.color?.getHex ? mat.color.getHex() : null };
+          mat.userData = { baseColor: mat.color?.getHex ? mat.color.getHex() : null, baseOpacity: mat.opacity };
 
           const mesh = new THREE.Mesh(geo, mat);
           mesh.userData = { kind: 'pallet', placement: p, bin, solution, box, mesh };
@@ -3071,12 +3340,16 @@
             new THREE.EdgesGeometry(geo),
             new THREE.LineBasicMaterial({ color: 0, transparent: true, opacity: 0.15 })
           );
-          e.position.copy(mesh.position);
-          group.add(e);
+          e.userData = { kind: 'palletEdges' };
+          mesh.add(e);
         });
 
         currentZ += box.W + GAP;
       });
+
+      if (solution.unplaced?.length) {
+        addUnplacedPalletPlate(currentZ, solution.unplaced, solution);
+      }
     }
 
     function getPointerNdcFromEvent(event) {
@@ -3086,15 +3359,39 @@
       return pointerNdc;
     }
 
-    function placeRotateButtonAt(clientX, clientY) {
+    function getPalletCenterOnScreen(hit) {
+      if (!hit?.mesh) return null;
+
+      const rect = els.container.getBoundingClientRect();
+      const center = new THREE.Vector3();
+      hit.mesh.getWorldPosition(center);
+      center.project(camera);
+
+      return {
+        x: (center.x * 0.5 + 0.5) * rect.width,
+        y: (-center.y * 0.5 + 0.5) * rect.height
+      };
+    }
+
+    function placeRotateButtonAtPalletCenter(hit) {
+      const point = getPalletCenterOnScreen(hit);
+      if (!point) return;
+
       const rect = els.container.getBoundingClientRect();
       const margin = 12;
-      const buttonW = 128;
-      const buttonH = 36;
-      const left = Math.max(margin, Math.min(clientX - rect.left + 14, rect.width - buttonW - margin));
-      const top = Math.max(margin, Math.min(clientY - rect.top + 14, rect.height - buttonH - margin));
+      const buttonW = els.rotatePalletBtn.offsetWidth || 128;
+      const buttonH = els.rotatePalletBtn.offsetHeight || 36;
+      const left = clamp(point.x - (buttonW / 2), margin, rect.width - buttonW - margin);
+      const top = clamp(point.y - (buttonH / 2), margin, rect.height - buttonH - margin);
+
       els.rotatePalletBtn.style.left = `${left}px`;
       els.rotatePalletBtn.style.top = `${top}px`;
+    }
+
+    function updateRotateButtonPosition() {
+      const hit = hoveredPalletHit || els.rotatePalletBtn?._palletHit;
+      if (!hit || els.rotatePalletBtn.hidden) return;
+      placeRotateButtonAtPalletCenter(hit);
     }
 
     function clearPalletHoverHighlight() {
@@ -3103,21 +3400,24 @@
         if (baseColor !== null && baseColor !== undefined && mesh.material?.color?.setHex) {
           mesh.material.color.setHex(baseColor);
         }
-        if (mesh.material) mesh.material.opacity = 1;
+        if (mesh.material) {
+          const baseOpacity = mesh.material.userData?.baseOpacity;
+          mesh.material.opacity = baseOpacity !== undefined ? baseOpacity : 1;
+        }
       });
     }
 
-    function showRotatePalletButton(hit, clientX, clientY) {
+    function showRotatePalletButton(hit) {
       hoveredPalletHit = hit;
       els.rotatePalletBtn._palletHit = hit;
-      placeRotateButtonAt(clientX, clientY);
       els.rotatePalletBtn.hidden = false;
       els.rotatePalletBtn.classList.add('is-visible');
+      placeRotateButtonAtPalletCenter(hit);
       renderer.domElement.style.cursor = 'pointer';
 
       clearPalletHoverHighlight();
       if (hit?.mesh?.material?.color?.setHex) {
-        hit.mesh.material.color.setHex(0xffd166);
+        hit.mesh.material.color.setHex(PALLET_HOVER_COLOR);
       }
     }
 
@@ -3139,7 +3439,12 @@
       mainGroup.updateMatrixWorld(true);
       raycaster.setFromCamera(getPointerNdcFromEvent(event), camera);
       const hits = raycaster.intersectObjects(interactivePalletMeshes, true);
-      return hits[0]?.object?.userData ?? null;
+      const object = hits[0]?.object;
+      const mesh = object?.userData?.kind === 'pallet'
+        ? object
+        : (object?.parent?.userData?.kind === 'pallet' ? object.parent : null);
+
+      return mesh?.userData ?? null;
     }
 
     function isSamePalletHit(a, b) {
@@ -3157,6 +3462,8 @@
       palletPointerDownHit = null;
       palletPointerDownPointerId = null;
       palletPointerDownCancelled = false;
+      palletPointerDownClientX = 0;
+      palletPointerDownClientY = 0;
     }
 
     function cancelPalletPointerDown() {
@@ -3166,25 +3473,44 @@
     }
 
     function handlePalletPointerMove(event) {
-      const hit = getPalletHitFromPointerEvent(event);
+      if (palletDragState && event.pointerId === palletDragState.pointerId) {
+        updateManualPalletDrag(event);
+        return;
+      }
 
       if (palletPointerDownHit && event.pointerId === palletPointerDownPointerId) {
+        const moveDistance = Math.hypot(
+          event.clientX - palletPointerDownClientX,
+          event.clientY - palletPointerDownClientY
+        );
+
+        if (moveDistance >= DRAG_START_DISTANCE_PX) {
+          beginManualPalletDrag(event);
+          if (palletDragState) {
+            updateManualPalletDrag(event);
+            return;
+          }
+        }
+
+        const hit = getPalletHitFromPointerEvent(event);
         if (!hit || !isSamePalletHit(palletPointerDownHit, hit)) {
           cancelPalletPointerDown();
           hideRotatePalletButton();
           return;
         }
 
-        showRotatePalletButton(hit, event.clientX, event.clientY);
+        showRotatePalletButton(hit);
         return;
       }
+
+      const hit = getPalletHitFromPointerEvent(event);
 
       if (!hit) {
         hideRotatePalletButton();
         return;
       }
 
-      showRotatePalletButton(hit, event.clientX, event.clientY);
+      showRotatePalletButton(hit);
     }
 
     function handlePalletPointerDown(event) {
@@ -3201,12 +3527,20 @@
       palletPointerDownHit = hit;
       palletPointerDownPointerId = event.pointerId;
       palletPointerDownCancelled = false;
+      palletPointerDownClientX = event.clientX;
+      palletPointerDownClientY = event.clientY;
       renderer.domElement.setPointerCapture?.(event.pointerId);
-      showRotatePalletButton(hit, event.clientX, event.clientY);
+      showRotatePalletButton(hit);
       event.preventDefault();
     }
 
     function handlePalletPointerUp(event) {
+      if (palletDragState && event.pointerId === palletDragState.pointerId) {
+        finishManualPalletDrag(event, false);
+        resetPalletPointerDownState(event);
+        return;
+      }
+
       if (!palletPointerDownHit || event.pointerId !== palletPointerDownPointerId) return;
 
       const startHit = palletPointerDownHit;
@@ -3215,13 +3549,12 @@
       resetPalletPointerDownState(event);
 
       if (!wasCancelled && isSamePalletHit(startHit, endHit)) {
-        showRotatePalletButton(endHit, event.clientX, event.clientY);
-        rotatePalletFromHit(endHit);
+        showRotatePalletButton(endHit);
         return;
       }
 
       if (endHit) {
-        showRotatePalletButton(endHit, event.clientX, event.clientY);
+        showRotatePalletButton(endHit);
       } else {
         hideRotatePalletButton();
       }
@@ -3229,11 +3562,18 @@
 
     function handlePalletPointerCancel(event) {
       cancelPalletPointerDown();
+
+      if (palletDragState && event.pointerId === palletDragState.pointerId) {
+        finishManualPalletDrag(event, true);
+      }
+
       resetPalletPointerDownState(event);
       hideRotatePalletButton();
     }
 
     function handlePalletPointerLeave(event) {
+      if (palletDragState) return;
+
       if (palletPointerDownHit) {
         cancelPalletPointerDown();
       } else {
@@ -3248,6 +3588,990 @@
     function clamp(value, min, max) {
       if (max < min) return min;
       return Math.max(min, Math.min(max, value));
+    }
+
+    function getStatsUiSnapshot() {
+      const capacitySlots = [
+        { row: els.cap40HCRow, label: els.cap40HCLabel, value: els.cap40HC },
+        { row: els.cap40Row, label: els.cap40Label, value: els.cap40 },
+        { row: els.cap20Row, label: els.cap20Label, value: els.cap20 }
+      ];
+
+      return {
+        reqText: els.reqText.innerText,
+        volTotal: els.volTotal.innerText,
+        msgBoxHtml: els.msgBox.innerHTML,
+        capacitySlots: capacitySlots.map(slot => ({
+          hidden: slot.row.hidden,
+          label: slot.label.innerText,
+          value: slot.value.innerText
+        }))
+      };
+    }
+
+    function restoreStatsUiSnapshot(snapshot) {
+      if (!snapshot) return;
+
+      els.reqText.innerText = snapshot.reqText ?? '-';
+      els.volTotal.innerText = snapshot.volTotal ?? '-';
+      els.msgBox.innerHTML = snapshot.msgBoxHtml ?? '';
+
+      const capacitySlots = [
+        { row: els.cap40HCRow, label: els.cap40HCLabel, value: els.cap40HC },
+        { row: els.cap40Row, label: els.cap40Label, value: els.cap40 },
+        { row: els.cap20Row, label: els.cap20Label, value: els.cap20 }
+      ];
+
+      capacitySlots.forEach((slot, idx) => {
+        const data = snapshot.capacitySlots?.[idx];
+        if (!data) return;
+        slot.row.hidden = Boolean(data.hidden);
+        slot.label.innerText = data.label ?? slot.label.innerText;
+        slot.value.innerText = data.value ?? slot.value.innerText;
+      });
+    }
+
+    function saveManualModeState(mode = activeEquipmentMode) {
+      if (!mode || !manualMode) return;
+
+      const solution = manualSolution || lastRenderedSolution;
+      if (!solution) return;
+
+      manualModeStates.set(mode, {
+        solution: cloneSolution(solution),
+        inputDirty: manualModeInputDirty,
+        ui: getStatsUiSnapshot()
+      });
+    }
+
+    function persistCurrentManualModeState() {
+      saveManualModeState(activeEquipmentMode);
+    }
+
+    function restoreManualModeStateForMode(mode) {
+      const state = manualModeStates.get(mode);
+      if (!state?.solution) return false;
+
+      manualMode = true;
+      manualSolution = cloneSolution(state.solution);
+      manualModeInputDirty = Boolean(state.inputDirty);
+      updateEquipmentUi();
+      restoreStatsUiSnapshot(state.ui);
+      build3DSceneFromSolution(manualSolution);
+      manualSolution = lastRenderedSolution;
+      updateManualModeUi();
+      autoFitCamera();
+      return true;
+    }
+
+    function syncManualModeWithEquipmentMode() {
+      const selectedMode = getEquipmentMode();
+      if (selectedMode === activeEquipmentMode) return false;
+
+      saveManualModeState(activeEquipmentMode);
+      activeEquipmentMode = selectedMode;
+      manualMode = false;
+      manualSolution = null;
+      manualModeInputDirty = false;
+      hideRotatePalletButton();
+      resetPalletPointerDownState();
+
+      if (restoreManualModeStateForMode(selectedMode)) {
+        forceHideLoadingBar();
+        return true;
+      }
+
+      updateManualModeUi();
+      return false;
+    }
+
+    function updateManualSolutionMessage(solution = lastRenderedSolution) {
+      if (!solution) return;
+
+      const mode = solution.mode || getEquipmentMode();
+      els.reqText.innerText = formatContainerCounts(solution.bins || [], mode);
+
+      const notes = [];
+      const widthWarningCount = solutionWidthWarningCount(solution);
+
+      if (widthWarningCount > 0) {
+        notes.push(`<span class="warning">Överbredd på flat rack: ${widthWarningCount} pall(ar).</span>`);
+      }
+
+      if (solution.unplaced?.length) {
+        notes.push(`<span class="warning">${solution.unplaced.length} pall(ar) står fortfarande utanför.</span>`);
+      }
+
+      els.msgBox.innerHTML = notes.length
+        ? notes.join('<br>')
+        : '<span class="success">Alla pallar placerades manuellt.</span>';
+    }
+
+    function updateManualModeUi() {
+      if (!manualMode) {
+        els.manualModeBox.hidden = true;
+        els.container.classList.remove('is-manual');
+        return;
+      }
+
+      if (els.manualModeText) els.manualModeText.textContent = '';
+      els.manualModeBox.hidden = false;
+      els.container.classList.add('is-manual');
+    }
+
+    function resetManualModesAfterPalletInputChange() {
+      manualModeStates.clear();
+      manualMode = false;
+      manualSolution = null;
+      manualModeInputDirty = false;
+      activeEquipmentMode = getEquipmentMode();
+      hideRotatePalletButton();
+      resetPalletPointerDownState();
+      palletDragState = null;
+      updateManualModeUi();
+    }
+
+    function handlePalletRowsChanged() {
+      resetManualModesAfterPalletInputChange();
+      update();
+    }
+
+    function enterManualMode() {
+      manualSolution = lastRenderedSolution;
+
+      if (!manualMode) {
+        manualMode = true;
+        manualModeInputDirty = false;
+      }
+
+      updateManualModeUi();
+      persistCurrentManualModeState();
+    }
+
+    function resetManualModeAndRepack() {
+      const mode = getEquipmentMode();
+      manualModeStates.delete(mode);
+      activeEquipmentMode = mode;
+      manualMode = false;
+      manualSolution = null;
+      manualModeInputDirty = false;
+      updateManualModeUi();
+      update();
+    }
+
+    function getPointerWorldPointOnPlane(event, plane) {
+      camera.updateMatrixWorld(true);
+      raycaster.setFromCamera(getPointerNdcFromEvent(event), camera);
+
+      const point = new THREE.Vector3();
+      return raycaster.ray.intersectPlane(plane, point) ? point : null;
+    }
+
+    function findMeshForPlacement(placement) {
+      return interactivePalletMeshes.find(mesh => mesh.userData?.placement === placement) || null;
+    }
+
+    function updateUnplacedPalletMeshPosition(mesh, placement, plate) {
+      if (!mesh || !plate) return;
+
+      mesh.position.set(
+        (-plate.plateL / 2) + placement.x + (placement.L / 2),
+        placement.H / 2,
+        (-plate.plateW / 2) + placement.y + (placement.W / 2)
+      );
+    }
+
+    function beginUnplacedPalletDrag(event, hit) {
+      if (!hit?.mesh || !hit?.placement) return;
+
+      const meshCenter = new THREE.Vector3();
+      hit.mesh.getWorldPosition(meshCenter);
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -meshCenter.y);
+      const pointerPoint = getPointerWorldPointOnPlane(event, plane);
+      if (!pointerPoint) return;
+
+      palletDragState = {
+        type: 'unplaced',
+        pointerId: event.pointerId,
+        hit,
+        mesh: hit.mesh,
+        parent: hit.mesh.parent,
+        placement: hit.placement,
+        item: hit.item || hit.placement.item,
+        plane,
+        offset: meshCenter.clone().sub(pointerPoint),
+        startPosition: hit.mesh.position.clone(),
+        startWorldPosition: meshCenter.clone(),
+        currentDrop: null,
+        currentOverContainer: false,
+        lastValidWorldPosition: null,
+        moved: false,
+        previousControlsEnabled: controls.enabled
+      };
+
+      controls.enabled = false;
+      hideRotatePalletButton();
+      renderer.domElement.style.cursor = 'grabbing';
+      event.preventDefault();
+    }
+
+    function updateUnplacedPalletDrag(event, state) {
+      const pointerPoint = getPointerWorldPointOnPlane(event, state.plane);
+      if (!pointerPoint) return;
+
+      const desiredWorld = pointerPoint.clone().add(state.offset);
+      const dropInfo = findDropPlacementForUnplacedDrag(state, desiredWorld, { includeInfo: true });
+
+      state.currentOverContainer = dropInfo.overContainer;
+      state.currentDrop = dropInfo.drop;
+
+      if (dropInfo.overContainer) {
+        if (dropInfo.drop) {
+          const dropWorld = getContainerPlacementWorldCenter(dropInfo.drop.group, dropInfo.drop.box, dropInfo.drop.placement);
+          state.mesh.position.copy(state.parent.worldToLocal(dropWorld.clone()));
+          state.lastValidWorldPosition = dropWorld.clone();
+        } else if (state.lastValidWorldPosition) {
+          state.mesh.position.copy(state.parent.worldToLocal(state.lastValidWorldPosition.clone()));
+        }
+      } else {
+        state.mesh.position.copy(state.parent.worldToLocal(desiredWorld.clone()));
+      }
+
+      state.moved = true;
+      event.preventDefault();
+    }
+
+    function findDropPlacementForUnplacedDrag(state, centerWorld = null, options = {}) {
+      const item = state.item;
+      const source = state.placement;
+      if (!item || !source) {
+        return options.includeInfo ? { drop: null, overContainer: false } : null;
+      }
+
+      const dragCenterWorld = centerWorld
+        ? centerWorld.clone()
+        : (() => {
+            const point = new THREE.Vector3();
+            state.mesh.getWorldPosition(point);
+            return point;
+          })();
+
+      let best = null;
+      let overContainer = false;
+
+      for (const target of interactiveDropBins) {
+        const { bin, box, group } = target;
+        if (!bin || !box || !group) continue;
+
+        const localCenter = group.worldToLocal(dragCenterWorld.clone());
+        const centerIsOverContainer = (
+          localCenter.x >= -box.L / 2 &&
+          localCenter.x <= box.L / 2 &&
+          localCenter.z >= -box.W / 2 &&
+          localCenter.z <= box.W / 2
+        );
+
+        if (!centerIsOverContainer) continue;
+        overContainer = true;
+
+        const rawX = localCenter.x + (box.L / 2) - (source.L / 2);
+        const rawY = localCenter.z + (box.W / 2) - (source.W / 2);
+        const placement = findManualDropPlacementInBin(bin, item, source, rawX, rawY, {
+          allowStacking: getWantedLayers() > 1
+        });
+
+        if (!placement) continue;
+
+        const snapDistance = Math.abs(rawX - placement.x) + Math.abs(rawY - placement.y);
+        const candidate = {
+          bin,
+          box,
+          group,
+          solution: target.solution,
+          score: [snapDistance, -placement.z, target.solution?.bins?.indexOf(bin) ?? 999],
+          placement
+        };
+
+        if (!best || lexicographicallyBetter(candidate.score, best.score)) {
+          best = candidate;
+        }
+      }
+
+      return options.includeInfo ? { drop: best, overContainer } : best;
+    }
+
+    function removeUnplacedItemFromSolution(solution, item) {
+      if (!solution?.unplaced || !item) return false;
+
+      let idx = solution.unplaced.indexOf(item);
+      if (idx === -1 && item.baseId) {
+        idx = solution.unplaced.findIndex(candidate => candidate?.baseId === item.baseId);
+      }
+
+      if (idx === -1) return false;
+      solution.unplaced.splice(idx, 1);
+      return true;
+    }
+
+    function finishUnplacedPalletDrag(event, cancelled, state) {
+      controls.enabled = state.previousControlsEnabled;
+      palletDragState = null;
+      renderer.domElement.style.cursor = '';
+
+      if (cancelled || !state.moved) {
+        state.mesh.position.copy(state.startPosition);
+        return;
+      }
+
+      const drop = state.currentDrop;
+
+      if (!drop) {
+        state.mesh.position.copy(state.startPosition);
+        setRotationFeedback('Pallen flyttades inte. Släpp den inne i en container där den får plats.');
+        return;
+      }
+
+      enterManualMode();
+
+      const solution = drop.solution || lastRenderedSolution;
+      removeUnplacedItemFromSolution(solution, state.item);
+      if (state.item) delete state.item.manualUnplacedOrientation;
+
+      placePlacementInBin(drop.bin, drop.placement);
+      refreshBinWarningFlags(drop.bin);
+      updateManualSolutionMessage(solution);
+      manualSolution = solution;
+      build3DSceneFromSolution(solution);
+      manualSolution = lastRenderedSolution;
+      updateManualModeUi();
+      persistCurrentManualModeState();
+      autoFitCamera();
+      setRotationFeedback(`Pallen flyttades in i ${formatContainerType(drop.bin.type)}.`, true);
+      event?.preventDefault?.();
+    }
+
+    function collectPlacementStack(bin, rootPlacement) {
+      const stack = [rootPlacement];
+      const ids = new Set([rootPlacement.baseId]);
+      let changed = true;
+
+      while (changed) {
+        changed = false;
+
+        for (const placement of bin.placements) {
+          if (stack.includes(placement)) continue;
+
+          if (placement.supportId && ids.has(placement.supportId)) {
+            stack.push(placement);
+            ids.add(placement.baseId);
+            changed = true;
+          }
+        }
+      }
+
+      return stack;
+    }
+
+    function getManualPlacementBounds(box, placement, L = placement.L, W = placement.W) {
+      let xMin = 0;
+      let xMax = box.L - L;
+      let yMin;
+      let yMax;
+
+      if (isFlatRackOverWidth(box, W)) {
+        const centeredY = (box.W - W) / 2;
+        yMin = centeredY;
+        yMax = centeredY;
+      } else {
+        yMin = 0;
+        yMax = box.W - W;
+      }
+
+      if (openTopPlacementNeedsRoofOpeningClearance(box, placement.item || placement)) {
+        const bounds = getRoofOpeningBounds(box);
+        xMin = bounds.xMin;
+        xMax = bounds.xMax - L;
+        yMin = bounds.yMin;
+        yMax = bounds.yMax - W;
+      }
+
+      return { xMin, xMax, yMin, yMax };
+    }
+
+    function manualBoundsAreUsable(bounds) {
+      return Boolean(bounds) &&
+        bounds.xMax >= bounds.xMin - EPS &&
+        bounds.yMax >= bounds.yMin - EPS;
+    }
+
+    function pointInsidePlacement2D(x, y, placement) {
+      return (
+        x >= placement.x - EPS &&
+        x <= placement.x + placement.L + EPS &&
+        y >= placement.y - EPS &&
+        y <= placement.y + placement.W + EPS
+      );
+    }
+
+    function manualOrientationFitsContainerEnvelope(bin, item, source, L, W) {
+      if (!bin?.box || !item) return false;
+
+      const bounds = getManualPlacementBounds(bin.box, source, L, W);
+      if (!manualBoundsAreUsable(bounds)) return false;
+
+      if (L > bin.box.L + EPS) return false;
+      if (item.H > getContainerHeightLimit(bin.box) + EPS) return false;
+      if (!flatRackOrientationAllowed(bin.box, item, L, W, { allowFlatRackOverWidth: true })) return false;
+      if (!canItemEnterContainer(bin.box, item, L, W)) return false;
+
+      return true;
+    }
+
+    function getContainerPlacementWorldCenter(group, box, placement) {
+      return group.localToWorld(new THREE.Vector3(
+        (-box.L / 2) + placement.x + (placement.L / 2),
+        placement.z + (placement.H / 2),
+        (-box.W / 2) + placement.y + (placement.W / 2)
+      ));
+    }
+
+    function createManualDropPlacement(bin, item, source, x, y, z, supportInfo) {
+      return {
+        baseId: item.baseId,
+        x,
+        y,
+        z,
+        L: source.L,
+        W: source.W,
+        H: item.H,
+        kind: source.kind,
+        layer: supportInfo.layer,
+        supportId: supportInfo.support?.baseId ?? null,
+        isOverWidth: supportInfo.overWidth,
+        item
+      };
+    }
+
+    function findManualDropPlacementInBin(bin, item, source, rawX, rawY, options = {}) {
+      if (!bin?.box || !item || !source) return null;
+
+      const wantedLayers = getWantedLayers();
+      const ignorePlacements = options.ignorePlacements || new Set();
+      const canStack = options.allowStacking !== false && wantedLayers > 1;
+      const centerX = rawX + (source.L / 2);
+      const centerY = rawY + (source.W / 2);
+      const candidates = [];
+
+      const addCandidate = (x, y, z, rank, support = null) => {
+        const supportInfo = canPlaceInBin(
+          bin,
+          item,
+          x,
+          y,
+          z,
+          source.L,
+          source.W,
+          wantedLayers,
+          {
+            allowFlatRackOverWidth: true,
+            ignorePlacements
+          }
+        );
+
+        if (!supportInfo) return;
+        if (support && supportInfo.support !== support) return;
+
+        const snapDistance = Math.abs(rawX - x) + Math.abs(rawY - y);
+        candidates.push({
+          score: [rank, snapDistance, -z, candidates.length],
+          placement: createManualDropPlacement(bin, item, source, x, y, z, supportInfo)
+        });
+      };
+
+      const floorBounds = getManualPlacementBounds(bin.box, source, source.L, source.W);
+      const centerIsOverSupport = canStack && bin.placements.some(p => (
+        !placementIsIgnored(p, { ignorePlacements }) &&
+        pointInsidePlacement2D(centerX, centerY, p)
+      ));
+
+      if (manualBoundsAreUsable(floorBounds)) {
+        const floorX = clamp(rawX, floorBounds.xMin, floorBounds.xMax);
+        const floorY = clamp(rawY, floorBounds.yMin, floorBounds.yMax);
+        addCandidate(floorX, floorY, 0, centerIsOverSupport ? 1 : 0);
+      }
+
+      if (canStack) {
+        const supports = [...bin.placements]
+          .filter(p => !placementIsIgnored(p, { ignorePlacements }))
+          .filter(p => pointInsidePlacement2D(centerX, centerY, p))
+          .sort((a, b) => (b.z + b.H) - (a.z + a.H));
+
+        for (const support of supports) {
+          const stackBounds = {
+            xMin: support.x,
+            xMax: support.x + support.L - source.L,
+            yMin: support.y,
+            yMax: support.y + support.W - source.W
+          };
+
+          if (!manualBoundsAreUsable(stackBounds) || !manualBoundsAreUsable(floorBounds)) continue;
+
+          const xMin = Math.max(stackBounds.xMin, floorBounds.xMin);
+          const xMax = Math.min(stackBounds.xMax, floorBounds.xMax);
+          const yMin = Math.max(stackBounds.yMin, floorBounds.yMin);
+          const yMax = Math.min(stackBounds.yMax, floorBounds.yMax);
+
+          if (xMax < xMin - EPS || yMax < yMin - EPS) continue;
+
+          const stackX = clamp(rawX, xMin, xMax);
+          const stackY = clamp(rawY, yMin, yMax);
+          addCandidate(stackX, stackY, support.z + support.H, 0, support);
+        }
+      }
+
+      if (!candidates.length) return null;
+
+      candidates.sort((a, b) => {
+        if (lexicographicallyBetter(a.score, b.score)) return -1;
+        if (lexicographicallyBetter(b.score, a.score)) return 1;
+        return 0;
+      });
+
+      return candidates[0].placement;
+    }
+
+    function clampManualDragDelta(bin, entries, dx, dy) {
+      let minDx = -Infinity;
+      let maxDx = Infinity;
+      let minDy = -Infinity;
+      let maxDy = Infinity;
+
+      for (const entry of entries) {
+        const bounds = getManualPlacementBounds(bin.box, entry.placement);
+        minDx = Math.max(minDx, bounds.xMin - entry.startX);
+        maxDx = Math.min(maxDx, bounds.xMax - entry.startX);
+        minDy = Math.max(minDy, bounds.yMin - entry.startY);
+        maxDy = Math.min(maxDy, bounds.yMax - entry.startY);
+      }
+
+      return {
+        dx: clamp(dx, minDx, maxDx),
+        dy: clamp(dy, minDy, maxDy)
+      };
+    }
+
+    function manualMoveWouldCollide(bin, entries, dx, dy) {
+      const moving = new Set(entries.map(entry => entry.placement));
+
+      for (const entry of entries) {
+        const placement = entry.placement;
+        const probe = {
+          ...placement,
+          x: entry.startX + dx,
+          y: entry.startY + dy,
+          z: entry.startZ
+        };
+
+        for (const other of bin.placements) {
+          if (moving.has(other)) continue;
+          if (boxesIntersect3D(probe, other)) return true;
+        }
+      }
+
+      return false;
+    }
+
+    function updatePalletMeshPosition(mesh, placement, box) {
+      if (!mesh) return;
+
+      mesh.position.set(
+        (-box.L / 2) + placement.x + (placement.L / 2),
+        placement.z + (placement.H / 2),
+        (-box.W / 2) + placement.y + (placement.W / 2)
+      );
+    }
+
+    function updatePalletMeshGeometry(mesh, placement) {
+      if (!mesh) return;
+
+      mesh.geometry?.dispose?.();
+      mesh.geometry = new THREE.BoxGeometry(
+        Math.max(placement.L - 2, 2),
+        Math.max(placement.H - 2, 2),
+        Math.max(placement.W - 2, 2)
+      );
+
+      const baseColor = placement.kind === 'A' ? PALLET_COLOR_A : PALLET_COLOR_B;
+      if (mesh.material?.userData) mesh.material.userData.baseColor = baseColor;
+      if (mesh.material?.color?.setHex) mesh.material.color.setHex(baseColor);
+
+      const edge = mesh.children.find(child => child.userData?.kind === 'palletEdges');
+      if (edge) {
+        edge.geometry?.dispose?.();
+        edge.geometry = new THREE.EdgesGeometry(mesh.geometry);
+      }
+    }
+
+    function refreshBinWarningFlags(bin) {
+      bin.overWidthWarning = bin.placements.some(p => placementExceedsNominalWidth(p, bin.box));
+      bin.overHeightWarning = bin.placements.some(p => placementExceedsNominalHeight(p, bin.box));
+    }
+
+    function applyManualDragDelta(state, dx, dy, dropPlacement = null) {
+      const rootZDelta = dropPlacement && state.entries.length === 1
+        ? dropPlacement.z - state.startRootZ
+        : 0;
+
+      for (const entry of state.entries) {
+        const placement = entry.placement;
+        placement.x = entry.startX + dx;
+        placement.y = entry.startY + dy;
+        placement.z = entry.startZ + rootZDelta;
+
+        if (dropPlacement && entry.placement === state.rootPlacement && state.entries.length === 1) {
+          placement.x = dropPlacement.x;
+          placement.y = dropPlacement.y;
+          placement.z = dropPlacement.z;
+          placement.layer = dropPlacement.layer;
+          placement.supportId = dropPlacement.supportId;
+          placement.isOverWidth = dropPlacement.isOverWidth;
+        } else {
+          placement.layer = entry.startLayer;
+          placement.supportId = entry.startSupportId;
+          placement.isOverWidth = placementExceedsNominalWidth(placement, state.bin.box);
+        }
+
+        updatePalletMeshPosition(entry.mesh, placement, state.bin.box);
+      }
+
+      refreshBinWarningFlags(state.bin);
+      manualSolution = lastRenderedSolution;
+      persistCurrentManualModeState();
+      updateRotateButtonPosition();
+    }
+
+    function findManualDragPlacementForState(state, rawX, rawY) {
+      if (!state || state.entries.length !== 1) return null;
+
+      const moving = new Set(state.entries.map(entry => entry.placement));
+      const source = {
+        ...state.rootPlacement,
+        L: state.rootPlacement.L,
+        W: state.rootPlacement.W,
+        kind: state.rootPlacement.kind,
+        item: state.rootPlacement.item
+      };
+
+      return findManualDropPlacementInBin(state.bin, state.rootPlacement.item, source, rawX, rawY, {
+        ignorePlacements: moving,
+        allowStacking: getWantedLayers() > 1
+      });
+    }
+
+    function beginManualPalletDrag(event) {
+      const hit = palletPointerDownHit;
+
+      if (hit?.isUnplaced) {
+        beginUnplacedPalletDrag(event, hit);
+        return;
+      }
+
+      if (!hit?.mesh || !hit?.bin || !hit?.placement) return;
+
+      const meshCenter = new THREE.Vector3();
+      hit.mesh.getWorldPosition(meshCenter);
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -meshCenter.y);
+      const pointerPoint = getPointerWorldPointOnPlane(event, plane);
+      if (!pointerPoint) return;
+
+      const placements = collectPlacementStack(hit.bin, hit.placement);
+      const entries = placements.map(placement => ({
+        placement,
+        startX: placement.x,
+        startY: placement.y,
+        startZ: placement.z,
+        startLayer: placement.layer ?? 1,
+        startSupportId: placement.supportId ?? null,
+        mesh: findMeshForPlacement(placement)
+      }));
+
+      palletDragState = {
+        pointerId: event.pointerId,
+        hit,
+        bin: hit.bin,
+        box: hit.box,
+        rootPlacement: hit.placement,
+        group: hit.mesh.parent,
+        plane,
+        offset: meshCenter.clone().sub(pointerPoint),
+        entries,
+        startRootX: hit.placement.x,
+        startRootY: hit.placement.y,
+        startRootZ: hit.placement.z,
+        lastValidDx: 0,
+        lastValidDy: 0,
+        lastValidDrop: {
+          ...hit.placement,
+          x: hit.placement.x,
+          y: hit.placement.y,
+          z: hit.placement.z,
+          layer: hit.placement.layer ?? 1,
+          supportId: hit.placement.supportId ?? null,
+          isOverWidth: hit.placement.isOverWidth
+        },
+        moved: false,
+        previousControlsEnabled: controls.enabled
+      };
+
+      controls.enabled = false;
+      hideRotatePalletButton();
+      renderer.domElement.style.cursor = 'grabbing';
+      event.preventDefault();
+    }
+
+    function updateManualPalletDrag(event) {
+      const state = palletDragState;
+      if (!state) return;
+
+      if (state.type === 'unplaced') {
+        updateUnplacedPalletDrag(event, state);
+        return;
+      }
+
+      const pointerPoint = getPointerWorldPointOnPlane(event, state.plane);
+      if (!pointerPoint) return;
+
+      const desiredCenter = pointerPoint.clone().add(state.offset);
+      const groupZ = state.group?.position?.z || 0;
+      const root = state.rootPlacement;
+      const desiredRootX = desiredCenter.x + (state.box.L / 2) - (root.L / 2);
+      const desiredRootY = desiredCenter.z - groupZ + (state.box.W / 2) - (root.W / 2);
+      let dx = desiredRootX - state.startRootX;
+      let dy = desiredRootY - state.startRootY;
+      let dropPlacement = null;
+
+      if (state.entries.length === 1) {
+        dropPlacement = findManualDragPlacementForState(state, desiredRootX, desiredRootY);
+
+        if (dropPlacement) {
+          dx = dropPlacement.x - state.startRootX;
+          dy = dropPlacement.y - state.startRootY;
+          state.lastValidDx = dx;
+          state.lastValidDy = dy;
+          state.lastValidDrop = { ...dropPlacement };
+        } else {
+          dx = state.lastValidDx;
+          dy = state.lastValidDy;
+          dropPlacement = state.lastValidDrop;
+        }
+      } else {
+        ({ dx, dy } = clampManualDragDelta(state.bin, state.entries, dx, dy));
+
+        if (manualMoveWouldCollide(state.bin, state.entries, dx, dy)) {
+          dx = state.lastValidDx;
+          dy = state.lastValidDy;
+        } else {
+          state.lastValidDx = dx;
+          state.lastValidDy = dy;
+        }
+      }
+
+      const zChanged = dropPlacement && Math.abs((dropPlacement.z ?? state.startRootZ) - state.rootPlacement.z) > EPS;
+
+      if (Math.abs(dx) > EPS || Math.abs(dy) > EPS || zChanged) {
+        state.moved = true;
+        enterManualMode();
+        applyManualDragDelta(state, dx, dy, dropPlacement);
+      }
+
+      event.preventDefault();
+    }
+
+    function finishManualPalletDrag(event, cancelled = false) {
+      const state = palletDragState;
+      if (!state) return;
+
+      if (state.type === 'unplaced') {
+        finishUnplacedPalletDrag(event, cancelled, state);
+        return;
+      }
+
+      controls.enabled = state.previousControlsEnabled;
+      palletDragState = null;
+      renderer.domElement.style.cursor = '';
+
+      if (!cancelled && state.moved) {
+        manualSolution = lastRenderedSolution;
+        updateManualModeUi();
+        persistCurrentManualModeState();
+      }
+    }
+
+    function manualRotationWouldCollide(bin, placement, probe) {
+      for (const other of bin.placements) {
+        if (other === placement) continue;
+        if (boxesIntersect3D(probe, other)) return true;
+      }
+
+      return false;
+    }
+
+    function removePlacementFromBin(bin, placement) {
+      if (!bin || !placement) return;
+
+      const placementIdx = bin.placements.indexOf(placement);
+      if (placementIdx !== -1) bin.placements.splice(placementIdx, 1);
+
+      const itemIdx = bin.items.indexOf(placement.item);
+      if (itemIdx !== -1) {
+        bin.items.splice(itemIdx, 1);
+      } else if (placement.item?.baseId) {
+        const byBaseId = bin.items.findIndex(item => item?.baseId === placement.item.baseId);
+        if (byBaseId !== -1) bin.items.splice(byBaseId, 1);
+      }
+
+      bin.usedVolume = Math.max(0, (bin.usedVolume || 0) - (placement.item?.volume || placement.L * placement.W * placement.H));
+      refreshBinWarningFlags(bin);
+    }
+
+    function addUnplacedItemToSolution(solution, item) {
+      if (!solution || !item) return;
+      if (!Array.isArray(solution.unplaced)) solution.unplaced = [];
+
+      const exists = solution.unplaced.some(candidate => (
+        candidate === item ||
+        (candidate?.baseId && item.baseId && candidate.baseId === item.baseId)
+      ));
+
+      if (!exists) solution.unplaced.push(item);
+    }
+
+    function moveManualPlacementToUnplacedPlate(bin, placement, orientation, message) {
+      const solution = lastRenderedSolution;
+      const item = placement.item;
+
+      if (!solution || !item) return;
+
+      item.manualUnplacedOrientation = {
+        L: orientation.L,
+        W: orientation.W,
+        kind: orientation.kind
+      };
+
+      removePlacementFromBin(bin, placement);
+      addUnplacedItemToSolution(solution, item);
+      updateManualSolutionMessage(solution);
+      manualSolution = solution;
+      build3DSceneFromSolution(solution);
+      manualSolution = lastRenderedSolution;
+      updateManualModeUi();
+      persistCurrentManualModeState();
+      autoFitCamera();
+      hideRotatePalletButton();
+      setRotationFeedback(message, true);
+    }
+
+    function rotatePalletInManualMode(hit) {
+      const { bin, placement, mesh } = hit;
+
+      if (placementHasSupportedChildren(bin, placement)) {
+        setRotationFeedback('Pallen har andra pallar ovanpå sig. Flytta eller rotera den översta pallen först.');
+        return;
+      }
+
+      const nextL = placement.W;
+      const nextW = placement.L;
+      if (!Number.isFinite(nextL) || !Number.isFinite(nextW) || nextL <= 0 || nextW <= 0) {
+        setRotationFeedback('Pallen kunde inte roteras eftersom pallens mått är ogiltiga.');
+        return;
+      }
+
+      const nextKind = placement.kind === 'A' ? 'B' : 'A';
+      const centerX = placement.x + (placement.L / 2);
+      const centerY = placement.y + (placement.W / 2);
+      const rotatedSource = {
+        ...placement,
+        L: nextL,
+        W: nextW,
+        kind: nextKind,
+        item: placement.item
+      };
+      const rawX = centerX - (nextL / 2);
+      const rawY = centerY - (nextW / 2);
+      const ignorePlacements = new Set([placement]);
+      const dropPlacement = findManualDropPlacementInBin(bin, placement.item, rotatedSource, rawX, rawY, {
+        ignorePlacements,
+        allowStacking: getWantedLayers() > 1
+      });
+
+      if (!dropPlacement) {
+        if (!manualOrientationFitsContainerEnvelope(bin, placement.item, rotatedSource, nextL, nextW)) {
+          moveManualPlacementToUnplacedPlate(
+            bin,
+            placement,
+            { L: nextL, W: nextW, kind: nextKind },
+            `Pallen roterades till ${formatNumberForRowInput(nextL)}x${formatNumberForRowInput(nextW)} cm men fick inte plats i containern, så den flyttades till Ej placerade.`
+          );
+          return;
+        }
+
+        setRotationFeedback('Pallen kunde inte roteras på plats eftersom den skulle kollidera med en annan pall.');
+        return;
+      }
+
+      placement.x = dropPlacement.x;
+      placement.y = dropPlacement.y;
+      placement.z = dropPlacement.z;
+      placement.L = nextL;
+      placement.W = nextW;
+      placement.kind = nextKind;
+      placement.layer = dropPlacement.layer;
+      placement.supportId = dropPlacement.supportId;
+      placement.isOverWidth = dropPlacement.isOverWidth;
+
+      updatePalletMeshGeometry(mesh, placement);
+      updatePalletMeshPosition(mesh, placement, bin.box);
+      refreshBinWarningFlags(bin);
+      updateManualSolutionMessage(lastRenderedSolution);
+      manualSolution = lastRenderedSolution;
+      hideRotatePalletButton();
+      updateManualModeUi();
+      persistCurrentManualModeState();
+      setRotationFeedback(`Pallen roterades i manuellt läge till ${formatNumberForRowInput(nextL)}x${formatNumberForRowInput(nextW)} cm.`, true);
+    }
+
+    function rotateUnplacedPallet(hit) {
+      const { placement, solution } = hit;
+      if (!placement) return;
+
+      const nextL = placement.W;
+      const nextW = placement.L;
+      if (!Number.isFinite(nextL) || !Number.isFinite(nextW) || nextL <= 0 || nextW <= 0) {
+        setRotationFeedback('Pallen kunde inte roteras eftersom pallens mått är ogiltiga.');
+        return;
+      }
+
+      const nextKind = placement.kind === 'A' ? 'B' : 'A';
+
+      if (placement.item) {
+        placement.item.manualUnplacedOrientation = {
+          L: nextL,
+          W: nextW,
+          kind: nextKind
+        };
+      }
+
+      const activeSolution = solution || lastRenderedSolution;
+      enterManualMode();
+      manualSolution = activeSolution;
+      build3DSceneFromSolution(activeSolution);
+      manualSolution = lastRenderedSolution;
+      updateManualSolutionMessage(lastRenderedSolution);
+      hideRotatePalletButton();
+      updateManualModeUi();
+      persistCurrentManualModeState();
+      autoFitCamera();
+      setRotationFeedback(`Pallen utanför roterades till ${formatNumberForRowInput(nextL)}x${formatNumberForRowInput(nextW)} cm och lades om på plattan. Dra in den i en container för att placera den.`, true);
     }
 
     function candidateManualRotation(bin, placement) {
@@ -3309,7 +4633,19 @@
     }
 
     function rotatePalletFromHit(hit) {
-      if (!hit?.bin || !hit?.placement) return;
+      if (!hit?.placement) return;
+
+      if (hit.isUnplaced) {
+        rotateUnplacedPallet(hit);
+        return;
+      }
+
+      if (!hit?.bin) return;
+
+      if (manualMode) {
+        rotatePalletInManualMode(hit);
+        return;
+      }
 
       const { bin, placement } = hit;
 
@@ -3334,6 +4670,7 @@
         : '';
 
       setRotationFeedback(`Pallen roterades manuellt och låstes till ${formatNumberForRowInput(rotated.L)}x${formatNumberForRowInput(rotated.W)} cm.${suffix}`, true);
+      resetManualModesAfterPalletInputChange();
       update();
     }
 
@@ -3396,7 +4733,13 @@
         : { type: getLargestContainerType(mode), mode, bins: [], unplaced: [] };
 
       const nonHeightUnplaced = solution.unplaced.filter(item => !palletTooTallForEveryContainer(item));
-      const visualSolution = addHeightWarningVisualBins(solution, tooTallItems);
+      const allUnplacedItems = uniqueItemsByBaseId([...solution.unplaced, ...tooTallItems]);
+      const visualSolution = {
+        type: solution.type,
+        mode: solution.mode || mode,
+        bins: solution.bins.length ? solution.bins : [createEmptyBin(getLargestContainerType(mode))],
+        unplaced: allUnplacedItems
+      };
 
       if (!solution.bins.length) {
         els.reqText.innerText = 'Godset för stort!';
@@ -3417,12 +4760,8 @@
 
         els.msgBox.innerHTML = messages.join('<br>');
 
-        if (tooTallItems.length) {
-          build3DSceneFromSolution(visualSolution);
-          autoFitCamera();
-        } else {
-          clearSceneGroup();
-        }
+        build3DSceneFromSolution(visualSolution);
+        autoFitCamera();
 
         return;
       }
@@ -3547,6 +4886,18 @@
     function update() {
       clearTimeout(updateDelayTimer);
 
+      if (syncManualModeWithEquipmentMode()) {
+        return;
+      }
+
+      if (manualMode) {
+        manualModeInputDirty = true;
+        forceHideLoadingBar();
+        updateManualModeUi();
+        persistCurrentManualModeState();
+        return;
+      }
+
       const totalPallets = getCurrentTotalPalletCount();
 
       if (totalPallets > LONG_CALC_THRESHOLD) {
@@ -3580,6 +4931,7 @@
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
+      updateRotateButtonPosition();
       renderer.render(scene, camera);
     }
 
