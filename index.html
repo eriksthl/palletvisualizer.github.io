@@ -13,6 +13,7 @@
       }
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root {
@@ -104,6 +105,11 @@
 
     button {
       font-family: inherit;
+    }
+
+    button:disabled {
+      opacity: 0.62;
+      cursor: progress;
     }
 
     .input-group {
@@ -301,6 +307,15 @@
       border: 1px solid #222c58;
       display: grid;
       gap: 8px;
+    }
+
+    .pdf-export-row {
+      margin-top: -4px;
+    }
+
+    .pdf-export-row .primary-button {
+      width: 100%;
+      padding: 10px;
     }
 
     .stat-row {
@@ -557,7 +572,7 @@
 
   <div class="sidebar">
     <h1>Eriks Pallpacknings-Kalkylator 3000</h1>
-    <div class="app-version">Extreme Point Heuristic // Version 6.5.1</div>
+    <div class="app-version">Extreme Point Heuristic // Version 7.0.4</div>
 
     <div class="input-panel">
       <div class="field">
@@ -594,7 +609,7 @@
           <button id="importPalletsBtn" class="primary-button" type="button">Importera text</button>
         </div>
 
-        <div class="note csv-format-note">CSV: equipment_mode,stackable,layers,count,length_cm,width_cm,height_cm,weight_kg,lock_rotation</div>
+        <div class="note csv-format-note" hidden></div>
         <div id="importMsg" class="note"></div>
       </div>
     </div>
@@ -634,6 +649,10 @@
         <span>Volym (m³):</span>
         <span id="volTotal">-</span>
       </div>
+    </div>
+
+    <div class="action-row pdf-export-row">
+      <button id="exportPdfBtn" class="primary-button" type="button">Exportera PDF</button>
     </div>
 
     <div id="msgBox" class="note"></div>
@@ -782,24 +801,21 @@
         types: ['20', '40', '40HC'],
         displayOrder: ['40HC', '40', '20'],
         capacitySlots: ['40HC', '40', '20'],
-        legend: 'Dörrmått',
-        note: "Dry van: dörr- och takhöjd används som hårda gränser."
+        legend: 'Dörrmått'
       },
       openTop: {
         label: 'Open top',
         types: ['20OT', '40OT'],
         displayOrder: ['40OT', '20OT'],
         capacitySlots: ['40OT', '20OT'],
-        legend: 'Dörr/toppmått',
-        note: 'Open top: toppöppning används när gods inte kan gå genom dörren; överhöjd markeras.'
+        legend: 'Dörr/toppmått'
       },
       flatRack: {
         label: 'Flat rack',
         types: ['20FR', '40FR'],
         displayOrder: ['40FR', '20FR'],
         capacitySlots: ['40FR', '20FR'],
-        legend: 'Flakmått',
-        note: 'Flat rack: in-gauge-logik som prioriteras först.'
+        legend: 'Flakmått'
       }
     };
 
@@ -867,6 +883,7 @@
       addPalletRow: document.getElementById('addPalletRow'),
       importPalletsBtn: document.getElementById('importPalletsBtn'),
       exportCsvBtn: document.getElementById('exportCsvBtn'),
+      exportPdfBtn: document.getElementById('exportPdfBtn'),
       importCsvBtn: document.getElementById('importCsvBtn'),
       csvFileInput: document.getElementById('csvFileInput'),
       importMsg: document.getElementById('importMsg'),
@@ -900,7 +917,8 @@
     scene.add(mainGroup);
 
     const camera = new THREE.PerspectiveCamera(45, els.container.clientWidth / els.container.clientHeight, 1, 20000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    renderer.setClearColor(0x0b1020, 1);
     renderer.setSize(els.container.clientWidth, els.container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     els.container.appendChild(renderer.domElement);
@@ -915,6 +933,7 @@
     scene.add(dirLight);
 
     let freeCam = false;
+    let hasAutoFittedScene = false;
     let nextPalletRowId = 1;
     let updateDelayTimer = null;
     let updateJobId = 0;
@@ -937,6 +956,7 @@
     const PALLET_COLOR_A = 0x4a9eff;
     const PALLET_COLOR_B = 0x7bd89c;
     const PALLET_HOVER_COLOR = 0xffd166;
+    const EXPORT_BACK_PANEL_COLOR = 0x45547a;
     const DRAG_START_DISTANCE_PX = 5;
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
@@ -978,6 +998,13 @@
 
     els.exportCsvBtn.addEventListener('click', () => {
       exportConfigurationCsv();
+    });
+
+    els.exportPdfBtn.addEventListener('click', () => {
+      exportReportPdf().catch(error => {
+        console.error(error);
+        els.importMsg.innerHTML = `<span class="warning">Kunde inte exportera PDF: ${escapeHtml(error?.message || error)}</span>`;
+      });
     });
 
     els.importCsvBtn.addEventListener('click', () => {
@@ -1023,8 +1050,14 @@
       ctx.fillText(text, 10, 42);
 
       const texture = new THREE.CanvasTexture(canvas);
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false
+      });
       const sprite = new THREE.Sprite(material);
+      sprite.renderOrder = 80;
       sprite.scale.set(scaleX, scaleY, 1);
       return sprite;
     }
@@ -2733,6 +2766,7 @@
     function addLineToGroup(group, points, material) {
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const line = new THREE.Line(geometry, material);
+      if (material?.depthTest === false) line.renderOrder = 70;
       group.add(line);
       return line;
     }
@@ -2753,8 +2787,8 @@
       const yDim = Math.min(doorH + 16, box.H + 16);
       const tick = 12;
 
-      const doorMat = new THREE.LineBasicMaterial({ color: 0xc28a55, transparent: true, opacity: 0.9 });
-      const dimMat = new THREE.LineBasicMaterial({ color: 0xb8946b, transparent: true, opacity: 0.9 });
+      const doorMat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
+      const dimMat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
 
       addLineToGroup(group, [
         new THREE.Vector3(x, yBottom, zLeft),
@@ -2799,13 +2833,76 @@
         new THREE.Vector3(x, yDim + tick, zRight)
       ], dimMat);
 
-      const heightLabel = createTextLabel(`Dörr H ${doorH} cm`, '#c28a55', 170, 24);
+      const heightLabel = createTextLabel(`Door H ${doorH} cm`, '#ffb86b', 190, 28);
       heightLabel.position.set(x - 4, doorH / 2, zDim + 12);
       group.add(heightLabel);
 
-      const widthLabel = createTextLabel(`Dörr B ${doorW} cm`, '#c28a55', 170, 24);
+      const widthLabel = createTextLabel(`Door W ${doorW} cm`, '#ffb86b', 190, 28);
       widthLabel.position.set(x - 4, yDim + 12, zLeft + 10);
       group.add(widthLabel);
+    }
+
+
+    function addContainerDimensionLines(group, box) {
+      const mat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
+      const xLeft = -box.L / 2;
+      const xRight = box.L / 2;
+      const zBack = -box.W / 2;
+      const zFront = box.W / 2;
+      const y = Math.max(8, box.H * 0.035);
+      const offset = 26;
+      const tick = 10;
+
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft, y, zFront + offset),
+        new THREE.Vector3(xRight, y, zFront + offset)
+      ], mat);
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft, y - tick, zFront + offset),
+        new THREE.Vector3(xLeft, y + tick, zFront + offset)
+      ], mat);
+      addLineToGroup(group, [
+        new THREE.Vector3(xRight, y - tick, zFront + offset),
+        new THREE.Vector3(xRight, y + tick, zFront + offset)
+      ], mat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(xRight + offset, y, zBack),
+        new THREE.Vector3(xRight + offset, y, zFront)
+      ], mat);
+      addLineToGroup(group, [
+        new THREE.Vector3(xRight + offset, y - tick, zBack),
+        new THREE.Vector3(xRight + offset, y + tick, zBack)
+      ], mat);
+      addLineToGroup(group, [
+        new THREE.Vector3(xRight + offset, y - tick, zFront),
+        new THREE.Vector3(xRight + offset, y + tick, zFront)
+      ], mat);
+
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft - offset, 0, zFront + offset),
+        new THREE.Vector3(xLeft - offset, box.H, zFront + offset)
+      ], mat);
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft - offset - tick, 0, zFront + offset),
+        new THREE.Vector3(xLeft - offset + tick, 0, zFront + offset)
+      ], mat);
+      addLineToGroup(group, [
+        new THREE.Vector3(xLeft - offset - tick, box.H, zFront + offset),
+        new THREE.Vector3(xLeft - offset + tick, box.H, zFront + offset)
+      ], mat);
+
+      const lengthLabel = createTextLabel(`L ${box.L} cm`, '#ffb86b', 160, 26);
+      lengthLabel.position.set(xLeft + Math.min(box.L * 0.36, 360), y + 18, zFront + offset + 12);
+      group.add(lengthLabel);
+
+      const widthLabel = createTextLabel(`W ${box.W} cm`, '#ffb86b', 150, 26);
+      widthLabel.position.set(xRight + offset + 10, y + 18, zBack + 8);
+      group.add(widthLabel);
+
+      const heightLabel = createTextLabel(`H ${box.H} cm`, '#ffb86b', 150, 26);
+      heightLabel.position.set(xLeft - offset - 4, box.H * 0.5, zFront + offset + 12);
+      group.add(heightLabel);
     }
 
     function addTopOpeningLines(group, box) {
@@ -2819,7 +2916,7 @@
       const zBack = -openW / 2;
       const zFront = openW / 2;
 
-      const mat = new THREE.LineBasicMaterial({ color: 0xc28a55, transparent: true, opacity: 0.9 });
+      const mat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
 
       addLineToGroup(group, [
         new THREE.Vector3(xLeft, y, zBack),
@@ -2829,7 +2926,7 @@
         new THREE.Vector3(xLeft, y, zBack)
       ], mat);
 
-      const label = createTextLabel(`Topp ${openL}x${openW} cm`, '#c28a55', 190, 24);
+      const label = createTextLabel(`Top ${openL}x${openW} cm`, '#ffb86b', 210, 28);
       label.position.set(xLeft, y + 22, zBack);
       group.add(label);
     }
@@ -3256,7 +3353,82 @@
       return layout.plateW + 250;
     }
 
-    function build3DSceneFromSolution(solution) {
+
+    function createExportBackPanelMaterial() {
+      return new THREE.MeshBasicMaterial({
+        color: EXPORT_BACK_PANEL_COLOR,
+        side: THREE.DoubleSide,
+        transparent: false,
+        depthWrite: true
+      });
+    }
+
+    function addExportPlanePanel(group, width, height, position, rotation = {}) {
+      const panel = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, height),
+        createExportBackPanelMaterial()
+      );
+
+      panel.position.copy(position);
+      panel.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
+      panel.renderOrder = -10;
+      group.add(panel);
+      return panel;
+    }
+
+    function addExportBackPanels(group, box, view = '3d') {
+      const addShortBack = () => addExportPlanePanel(
+        group,
+        box.W,
+        box.H,
+        new THREE.Vector3(-box.L / 2, box.H / 2, 0),
+        { y: Math.PI / 2 }
+      );
+
+      const addLongBack = () => addExportPlanePanel(
+        group,
+        box.L,
+        box.H,
+        new THREE.Vector3(0, box.H / 2, -box.W / 2)
+      );
+
+      const addLongFront = () => addExportPlanePanel(
+        group,
+        box.L,
+        box.H,
+        new THREE.Vector3(0, box.H / 2, box.W / 2)
+      );
+
+      if (view === '3d') {
+        addShortBack();
+        addLongBack();
+        return;
+      }
+
+      if (view === 'top') {
+        addShortBack();
+        addLongBack();
+        return;
+      }
+
+      if (view === 'sideB') {
+        addLongFront();
+        return;
+      }
+
+      addLongBack();
+    }
+
+    function build3DSceneFromSolution(solution, options = {}) {
+      const {
+        interactive = true,
+        includeUnplaced = true,
+        showLabels = true,
+        showDimensionGuides = true,
+        showExportBackPanels = false,
+        exportPanelView = '3d'
+      } = options;
+
       solution = centerFlatRackSolutionPlacementsAlongLength(cloneSolution(solution));
 
       clearSceneGroup();
@@ -3277,13 +3449,23 @@
         group.position.z = currentZ;
         mainGroup.add(group);
 
-        interactiveDropBins.push({ bin, box, group, solution });
-        window.__interactiveDropBins = interactiveDropBins;
+        if (interactive) {
+          interactiveDropBins.push({ bin, box, group, solution });
+          window.__interactiveDropBins = interactiveDropBins;
+        }
 
-        const labelText = `${formatContainerType(bin.type)}${bin.visualOnly ? ' - höjdvarning' : ''} (${box.L}x${box.W}x${box.H}cm)`;
-        const label = createTextLabel(labelText);
-        label.position.set(-box.L / 2, box.H + 40, -box.W / 2);
-        group.add(label);
+        if (showLabels) {
+          const labelText = `${formatContainerType(bin.type)}${bin.visualOnly ? ' - height warning' : ''} (${box.L} x ${box.W} x ${box.H} cm)`;
+          const labelScaleX = showExportBackPanels ? Math.min(660, Math.max(500, box.L * 0.44)) : 350;
+          const labelScaleY = showExportBackPanels ? 58 : 45;
+          const label = createTextLabel(labelText, showExportBackPanels ? '#ffffff' : '#a9b0d6', labelScaleX, labelScaleY);
+          label.position.set(
+            showExportBackPanels ? (-box.L / 2) + (labelScaleX / 2) + 12 : -box.L / 2,
+            box.H + (showExportBackPanels ? 58 : 40),
+            showExportBackPanels ? (box.W / 2) + 22 : -box.W / 2
+          );
+          group.add(label);
+        }
 
         const floorGeo = new THREE.PlaneGeometry(box.L, box.W);
         const floor = new THREE.Mesh(
@@ -3292,6 +3474,10 @@
         );
         floor.rotation.x = -Math.PI / 2;
         group.add(floor);
+
+        if (showExportBackPanels) {
+          addExportBackPanels(group, box, exportPanelView);
+        }
 
         const boxGeo = new THREE.BoxGeometry(box.L, box.H, box.W);
         const line = new THREE.LineSegments(
@@ -3309,8 +3495,11 @@
           addFlatRackSideWarningLines(group, box);
         }
 
-        addDoorDimensionLines(group, box);
-        addTopOpeningLines(group, box);
+        if (showDimensionGuides) {
+          if (showExportBackPanels) addContainerDimensionLines(group, box);
+          addDoorDimensionLines(group, box);
+          addTopOpeningLines(group, box);
+        }
 
         const matA = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_A });
         const matB = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_B });
@@ -3327,8 +3516,12 @@
 
           const mesh = new THREE.Mesh(geo, mat);
           mesh.userData = { kind: 'pallet', placement: p, bin, solution, box, mesh };
-          interactivePalletMeshes.push(mesh);
-          window.__interactivePalletMeshes = interactivePalletMeshes;
+
+          if (interactive) {
+            interactivePalletMeshes.push(mesh);
+            window.__interactivePalletMeshes = interactivePalletMeshes;
+          }
+
           mesh.position.set(
             (-box.L / 2) + p.x + (p.L / 2),
             p.z + (p.H / 2),
@@ -3347,7 +3540,7 @@
         currentZ += box.W + GAP;
       });
 
-      if (solution.unplaced?.length) {
+      if (includeUnplaced && solution.unplaced?.length) {
         addUnplacedPalletPlate(currentZ, solution.unplaced, solution);
       }
     }
@@ -4818,8 +5011,8 @@
       });
     }
 
-    function autoFitCamera() {
-      if (freeCam) return;
+    function autoFitCamera(force = false) {
+      if (freeCam && hasAutoFittedScene && !force) return;
 
       const box = new THREE.Box3().setFromObject(mainGroup);
       if (!Number.isFinite(box.min.x) || !Number.isFinite(box.max.x)) return;
@@ -4844,6 +5037,7 @@
       camera.lookAt(targetPoint);
       controls.target.copy(targetPoint);
       controls.update();
+      hasAutoFittedScene = true;
     }
 
     function getCurrentTotalPalletCount() {
@@ -4877,6 +5071,839 @@
       clearTimeout(hideLoadingTimer);
       els.loadingOverlay.hidden = true;
       els.container.classList.remove('is-calculating');
+    }
+
+    // -------------------------------
+    // PDF-EXPORT
+    // -------------------------------
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    const PDF_TITLE = 'Loading Plan';
+    const PDF_LOCALE = 'en-US';
+
+    function normalizePdfText(value) {
+      return String(value ?? '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/\u2013|\u2014/g, '-')
+        .replace(/m³/g, 'm3')
+        .replace(/(\d+)st\b/g, '$1 x')
+        .replace(/\bst\b/g, 'pcs')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function htmlToPlainText(html) {
+      const temp = document.createElement('div');
+      temp.innerHTML = html || '';
+      return normalizePdfText(temp.innerText || temp.textContent || '');
+    }
+
+    function formatPdfNumber(value, decimals = 1) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return '-';
+      return number.toLocaleString(PDF_LOCALE, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatPdfDisplayTimestamp(date) {
+      const pad = value => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function formatPdfFileTimestamp(date) {
+      const pad = value => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}, ${pad(date.getHours())}-${pad(date.getMinutes())}`;
+    }
+
+    function getVisibleCapacityRowsForPdf() {
+      const slots = [
+        { row: els.cap40HCRow, label: els.cap40HCLabel, value: els.cap40HC },
+        { row: els.cap40Row, label: els.cap40Label, value: els.cap40 },
+        { row: els.cap20Row, label: els.cap20Label, value: els.cap20 }
+      ];
+
+      return slots
+        .filter(slot => !slot.row.hidden)
+        .map(slot => {
+          const label = normalizePdfText(slot.label.innerText)
+            .replace(/^Kapacitet/i, 'Capacity')
+            .replace(/:$/, '');
+          const value = normalizePdfText(slot.value.innerText || '-');
+          return [label, value];
+        });
+    }
+
+    function getWeightSummaryForPdf(rows) {
+      let total = 0;
+      let weightedRows = 0;
+
+      rows.forEach(row => {
+        if (row.weight === '' || !Number.isFinite(Number(row.weight))) return;
+        weightedRows++;
+        total += row.count * Number(row.weight);
+      });
+
+      if (!weightedRows) return '-';
+      const suffix = weightedRows === rows.length ? '' : ' (partial)';
+      return `${formatPdfNumber(total, 1)} kg${suffix}`;
+    }
+
+    function getTotalVolumeSummaryForPdf(rows) {
+      const volume = rows.reduce((sum, row) => sum + (row.count * row.L * row.W * row.H), 0) / 1000000;
+      return `${formatPdfNumber(volume, 2)} m3`;
+    }
+
+    function getPalletRowsForPdf() {
+      return readPalletRowDefinitions().map((row, idx) => [
+        String(idx + 1),
+        String(row.count),
+        `${formatNumberForRowInput(row.L)} x ${formatNumberForRowInput(row.W)} x ${formatNumberForRowInput(row.H)}`,
+        row.weight === '' ? '-' : `${formatNumberForRowInput(row.weight)} kg`,
+        row.lockRotation ? 'Yes' : 'No'
+      ]);
+    }
+
+    function getPdfStatusForBin(bin) {
+      const warnings = [];
+
+      if (bin.visualOnly) warnings.push('Visual warning');
+      if (binHasHeightWarning(bin)) warnings.push('Height');
+      if (binHasWidthWarning(bin)) warnings.push('Overwidth');
+      if (!warnings.length) warnings.push('OK');
+
+      return warnings.join(', ');
+    }
+
+    function getSolutionRowsForPdf(solution = lastRenderedSolution) {
+      if (!solution?.bins?.length) return [];
+
+      return solution.bins.map((bin, idx) => [
+        `${idx + 1}`,
+        formatContainerType(bin.type),
+        `${bin.items?.length || bin.placements?.length || 0}`,
+        `${formatPdfNumber(fillRatio(bin) * 100, 1)}%`,
+        getPdfStatusForBin(bin)
+      ]);
+    }
+
+    function getPdfNotesForSolution(solution = lastRenderedSolution) {
+      if (!solution) return '';
+
+      const notes = [];
+      const widthWarnings = solutionWidthWarningCount(solution);
+      const unplaced = solution.unplaced?.length || 0;
+      const heightWarnings = solution.bins?.filter(binHasHeightWarning).length || 0;
+
+      if (widthWarnings > 0) notes.push(`Flat rack overwidth: ${widthWarnings} pallet(s).`);
+      if (heightWarnings > 0) notes.push(`Height warning: ${heightWarnings} container(s).`);
+      if (unplaced > 0) notes.push(`Unplaced pallets: ${unplaced}.`);
+
+      return notes.join(' ');
+    }
+
+    function getSummaryRowsForPdf(solution = lastRenderedSolution) {
+      const rows = readPalletRowDefinitions();
+      const totalPallets = rows.reduce((sum, row) => sum + row.count, 0);
+      const modeConfig = getModeConfig();
+      const unplaced = solution?.unplaced?.length || 0;
+      const widthWarnings = solution ? solutionWidthWarningCount(solution) : 0;
+      const heightWarnings = solution?.bins?.filter(binHasHeightWarning).length || 0;
+      const notes = getPdfNotesForSolution(solution);
+      const summaryRows = [
+        ['Required equipment', els.reqText.innerText || '-'],
+        ['Total pallets', `${totalPallets}`],
+        ['Total volume', getTotalVolumeSummaryForPdf(rows)],
+        ['Total weight', getWeightSummaryForPdf(rows)],
+        ['Equipment type', modeConfig.label],
+        ['Stackable', els.stack.checked ? `Yes, ${getWantedLayers()} layer(s)` : 'No'],
+        ['Unplaced', `${unplaced}`],
+        ['Overwidth', `${widthWarnings} pallet(s)`],
+        ['Height warnings', `${heightWarnings} container(s)`],
+        ...getVisibleCapacityRowsForPdf()
+      ];
+
+      if (notes) summaryRows.push(['Notes', notes]);
+      return summaryRows;
+    }
+
+    function nextFrame() {
+      return new Promise(resolve => requestAnimationFrame(() => resolve()));
+    }
+
+    function makeRendererSnapshotDataUrl() {
+      const source = renderer.domElement;
+      const canvas = document.createElement('canvas');
+      canvas.width = source.width;
+      canvas.height = source.height;
+
+      const ctx = canvas.getContext('2d');
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.max(canvas.width, canvas.height) * 0.72;
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      gradient.addColorStop(0, '#1a2035');
+      gradient.addColorStop(1, '#0b1020');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(source, 0, 0);
+
+      return {
+        dataUrl: canvas.toDataURL('image/png'),
+        width: canvas.width,
+        height: canvas.height
+      };
+    }
+
+    function getCameraState() {
+      return {
+        freeCam,
+        controlsEnabled: controls.enabled,
+        cameraPosition: camera.position.clone(),
+        cameraQuaternion: camera.quaternion.clone(),
+        cameraUp: camera.up.clone(),
+        controlsTarget: controls.target.clone(),
+        hasAutoFittedScene
+      };
+    }
+
+    function restoreCameraState(state) {
+      if (!state) return;
+
+      freeCam = state.freeCam;
+      controls.enabled = state.controlsEnabled;
+      camera.position.copy(state.cameraPosition);
+      camera.quaternion.copy(state.cameraQuaternion);
+      camera.up.copy(state.cameraUp);
+      controls.target.copy(state.controlsTarget);
+      hasAutoFittedScene = Boolean(state.hasAutoFittedScene);
+      controls.update();
+      updateCameraToggleUi();
+    }
+
+    function updateCameraToggleUi() {
+      els.toggleCamBtn.innerText = freeCam ? 'Cam Unlocked' : 'Cam Locked';
+      els.toggleCamBtn.classList.toggle('active', freeCam);
+    }
+
+    async function captureLockedCameraForPdf(solution = lastRenderedSolution) {
+      const previous = getCameraState();
+      const exportSceneSolution = solution ? cloneSolution(solution) : null;
+
+      hideRotatePalletButton();
+
+      if (exportSceneSolution) {
+        build3DSceneFromSolution(exportSceneSolution, {
+          interactive: false,
+          includeUnplaced: true,
+          showLabels: true,
+          showDimensionGuides: true,
+          showExportBackPanels: true,
+          exportPanelView: '3d'
+        });
+      }
+
+      freeCam = false;
+      controls.enabled = false;
+      updateCameraToggleUi();
+      autoFitCamera(true);
+      controls.update();
+
+      await nextFrame();
+      renderer.render(scene, camera);
+      const image = makeRendererSnapshotDataUrl();
+
+      restoreCameraState(previous);
+      renderer.render(scene, camera);
+
+      return image;
+    }
+
+    function fitImageInBox(imgW, imgH, x, y, boxW, boxH) {
+      const imageRatio = imgW / imgH;
+      const boxRatio = boxW / boxH;
+      let w = boxW;
+      let h = boxH;
+
+      if (imageRatio > boxRatio) {
+        h = boxW / imageRatio;
+      } else {
+        w = boxH * imageRatio;
+      }
+
+      return {
+        x: x + ((boxW - w) / 2),
+        y: y + ((boxH - h) / 2),
+        w,
+        h
+      };
+    }
+
+    function getMainGroupBoundsForPdf(options = {}) {
+      const ignoreTextLabels = options.ignoreTextLabels !== false;
+      const bounds = new THREE.Box3();
+      let hasBounds = false;
+
+      mainGroup.updateMatrixWorld(true);
+      mainGroup.traverse(object => {
+        if (!object.visible) return;
+        if (ignoreTextLabels && (object.isSprite || object.userData?.kind === 'textLabel')) return;
+        if (!(object.isMesh || object.isLine || object.isLineSegments || object.isSprite)) return;
+
+        const objectBounds = new THREE.Box3().setFromObject(object);
+        if (!Number.isFinite(objectBounds.min.x) || !Number.isFinite(objectBounds.max.x)) return;
+
+        if (!hasBounds) {
+          bounds.copy(objectBounds);
+          hasBounds = true;
+        } else {
+          bounds.union(objectBounds);
+        }
+      });
+
+      if (!hasBounds) {
+        return new THREE.Box3(
+          new THREE.Vector3(-250, 0, -125),
+          new THREE.Vector3(250, 250, 125)
+        );
+      }
+
+      bounds.expandByScalar(12);
+      return bounds;
+    }
+
+    function getBox3Corners(bounds) {
+      const { min, max } = bounds;
+      return [
+        new THREE.Vector3(min.x, min.y, min.z),
+        new THREE.Vector3(min.x, min.y, max.z),
+        new THREE.Vector3(min.x, max.y, min.z),
+        new THREE.Vector3(min.x, max.y, max.z),
+        new THREE.Vector3(max.x, min.y, min.z),
+        new THREE.Vector3(max.x, min.y, max.z),
+        new THREE.Vector3(max.x, max.y, min.z),
+        new THREE.Vector3(max.x, max.y, max.z)
+      ];
+    }
+
+    function getCameraSpaceBoundsForBox(camera, bounds) {
+      camera.updateMatrixWorld(true);
+      const projected = getBox3Corners(bounds).map(point => point.applyMatrix4(camera.matrixWorldInverse));
+
+      return projected.reduce((acc, point) => ({
+        minX: Math.min(acc.minX, point.x),
+        maxX: Math.max(acc.maxX, point.x),
+        minY: Math.min(acc.minY, point.y),
+        maxY: Math.max(acc.maxY, point.y)
+      }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+    }
+
+    function createPdfCameraForView(view, bounds) {
+      const aspect = Math.max(0.1, renderer.domElement.width / Math.max(1, renderer.domElement.height));
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z, 400);
+
+      if (view === '3d') {
+        const dist = Math.max(maxDim * 3.2, 2400);
+        const direction = new THREE.Vector3(0.88, 0.58, 0.78).normalize();
+        const seedTarget = center.clone();
+        const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, dist * 5);
+
+        cam.position.copy(seedTarget).add(direction.clone().multiplyScalar(dist));
+        cam.up.set(0, 1, 0);
+        cam.lookAt(seedTarget);
+        cam.updateMatrixWorld(true);
+
+        const projected = getCameraSpaceBoundsForBox(cam, bounds);
+        const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).normalize();
+        const camUp = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1).normalize();
+        const target = seedTarget
+          .clone()
+          .add(right.multiplyScalar((projected.minX + projected.maxX) / 2))
+          .add(camUp.multiplyScalar((projected.minY + projected.maxY) / 2));
+
+        cam.position.copy(target).add(direction.clone().multiplyScalar(dist));
+        cam.lookAt(target);
+        cam.updateMatrixWorld(true);
+
+        const centeredProjected = getCameraSpaceBoundsForBox(cam, bounds);
+        const projectedW = Math.max(centeredProjected.maxX - centeredProjected.minX, 320);
+        const projectedH = Math.max(centeredProjected.maxY - centeredProjected.minY, 220);
+        const pad = 1.08;
+        let halfW = (projectedW * pad) / 2;
+        let halfH = (projectedH * pad) / 2;
+
+        if ((halfW * 2) / (halfH * 2) > aspect) {
+          halfH = halfW / aspect;
+        } else {
+          halfW = halfH * aspect;
+        }
+
+        cam.left = -halfW;
+        cam.right = halfW;
+        cam.top = halfH;
+        cam.bottom = -halfH;
+        cam.updateProjectionMatrix();
+        return cam;
+      }
+
+      const pad = 1.04;
+      let viewW = Math.max(size.x, 160);
+      let viewH = Math.max(size.y, 120);
+      const dist = maxDim * 3;
+      const target = center.clone();
+      let position;
+      let up = new THREE.Vector3(0, 1, 0);
+
+      if (view === 'top') {
+        viewH = Math.max(size.z, 120);
+        position = new THREE.Vector3(center.x, center.y + dist, center.z);
+        up = new THREE.Vector3(0, 0, -1);
+      } else if (view === 'sideB') {
+        position = new THREE.Vector3(center.x, center.y, center.z - dist);
+      } else {
+        position = new THREE.Vector3(center.x, center.y, center.z + dist);
+      }
+
+      let halfW = (viewW * pad) / 2;
+      let halfH = (viewH * pad) / 2;
+
+      if ((halfW * 2) / (halfH * 2) > aspect) {
+        halfH = halfW / aspect;
+      } else {
+        halfW = halfH * aspect;
+      }
+
+      const cam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 1, dist * 4);
+      cam.position.copy(position);
+      cam.up.copy(up);
+      cam.lookAt(target);
+      cam.updateProjectionMatrix();
+      return cam;
+    }
+
+
+    function withPdfRendererSize(callback, width = 1800, height = 1000) {
+      const previousPixelRatio = renderer.getPixelRatio();
+      const previousStyleWidth = renderer.domElement.style.width;
+      const previousStyleHeight = renderer.domElement.style.height;
+
+      renderer.setPixelRatio(1);
+      renderer.setSize(width, height, false);
+
+      try {
+        return callback();
+      } finally {
+        renderer.setPixelRatio(previousPixelRatio);
+        renderer.setSize(els.container.clientWidth, els.container.clientHeight, false);
+        renderer.domElement.style.width = previousStyleWidth;
+        renderer.domElement.style.height = previousStyleHeight;
+        camera.aspect = els.container.clientWidth / Math.max(1, els.container.clientHeight);
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    function getSingleContainerPdfBounds(bin, view) {
+      const box = bin?.box || CONTAINERS[bin?.type] || CONTAINERS['40'];
+      const xMargin = view === '3d' ? 125 : 12;
+      const yTopMargin = view === '3d' ? 130 : 12;
+      const yBottomMargin = view === '3d' ? 18 : 0;
+      const zMargin = view === '3d' ? 135 : 12;
+      const bounds = new THREE.Box3(
+        new THREE.Vector3((-box.L / 2) - xMargin, -yBottomMargin, (-box.W / 2) - zMargin),
+        new THREE.Vector3((box.L / 2) + xMargin, box.H + yTopMargin, (box.W / 2) + zMargin)
+      );
+
+      (bin?.placements || []).forEach(p => {
+        const pad = view === '3d' ? 12 : 4;
+        bounds.union(new THREE.Box3(
+          new THREE.Vector3((-box.L / 2) + p.x - pad, p.z - pad, (-box.W / 2) + p.y - pad),
+          new THREE.Vector3((-box.L / 2) + p.x + p.L + pad, p.z + p.H + pad, (-box.W / 2) + p.y + p.W + pad)
+        ));
+      });
+
+      return bounds;
+    }
+
+    function captureCurrentPdfSceneView(view, boundsOverride = null) {
+      return withPdfRendererSize(() => {
+        const bounds = boundsOverride || getMainGroupBoundsForPdf();
+        const viewCamera = createPdfCameraForView(view, bounds);
+        renderer.render(scene, viewCamera);
+        return makeRendererSnapshotDataUrl();
+      });
+    }
+
+    async function captureSingleContainerPdfView(singleSolution, view, options = {}) {
+      build3DSceneFromSolution(singleSolution, {
+        interactive: false,
+        includeUnplaced: false,
+        showLabels: Boolean(options.showLabels),
+        showDimensionGuides: Boolean(options.showDimensionGuides),
+        showExportBackPanels: true,
+        exportPanelView: view
+      });
+
+      await nextFrame();
+      const staticBounds = getSingleContainerPdfBounds(singleSolution?.bins?.[0], view);
+
+      if (view === '3d') {
+        return captureCurrentPdfSceneView(view, staticBounds);
+      }
+
+      staticBounds.union(getMainGroupBoundsForPdf({ ignoreTextLabels: true }));
+      return captureCurrentPdfSceneView(view, staticBounds);
+    }
+
+    async function captureContainerViewsForPdf(solution, binIndex) {
+      const bin = solution?.bins?.[binIndex];
+      if (!bin) return null;
+
+      const singleSolution = {
+        type: bin.type,
+        mode: solution.mode || getEquipmentMode(),
+        bins: [cloneBin(bin)],
+        unplaced: []
+      };
+
+      return {
+        bin: cloneBin(bin),
+        threeD: await captureSingleContainerPdfView(singleSolution, '3d', {
+          showLabels: true,
+          showDimensionGuides: true
+        }),
+        top: await captureSingleContainerPdfView(singleSolution, 'top'),
+        sideA: await captureSingleContainerPdfView(singleSolution, 'sideA'),
+        sideB: await captureSingleContainerPdfView(singleSolution, 'sideB')
+      };
+    }
+
+    function restoreSceneAfterPdfExport(solution, cameraState, manualSolutionSnapshot = null) {
+      if (solution) {
+        build3DSceneFromSolution(solution);
+        if (manualMode) {
+          manualSolution = manualSolutionSnapshot ? cloneSolution(manualSolutionSnapshot) : lastRenderedSolution;
+        }
+      }
+
+      restoreCameraState(cameraState);
+      renderer.render(scene, camera);
+    }
+
+    function addPdfHeader(doc, title, subtitle = '') {
+      const pageW = doc.internal.pageSize.getWidth();
+      doc.setFillColor(11, 16, 32);
+      doc.rect(0, 0, pageW, 18, 'F');
+      doc.setFillColor(106, 166, 255);
+      doc.rect(0, 17.5, pageW, 0.5, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text(normalizePdfText(title), 10, 11.5);
+
+      if (subtitle) {
+        doc.setTextColor(169, 176, 214);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text(normalizePdfText(subtitle), pageW - 10, 11.5, { align: 'right' });
+      }
+    }
+
+    function addPdfFooter(doc, pageNumber, pageCount) {
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.2);
+      doc.setTextColor(128, 138, 170);
+      doc.text(`Page ${pageNumber} of ${pageCount}`, pageW - 10, pageH - 8, { align: 'right' });
+    }
+
+    function drawInfoPanel(doc, x, y, w, rows) {
+      doc.setFillColor(17, 22, 42);
+      doc.roundedRect(x, y, w, 154, 3, 3, 'F');
+      doc.setDrawColor(42, 53, 96);
+      doc.roundedRect(x, y, w, 154, 3, 3, 'S');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text('Summary', x + 5, y + 8);
+
+      let cy = y + 17;
+      rows.forEach(([label, value], idx) => {
+        const isMain = idx === 0;
+        const rowH = isMain ? 12 : 9.2;
+        const safeValue = normalizePdfText(value || '-');
+        const lines = doc.splitTextToSize(safeValue, w - 45);
+        const lineH = Math.max(rowH, lines.length * 4.1 + 3);
+
+        if (cy + lineH > y + 149) return;
+
+        if (isMain) {
+          doc.setFillColor(15, 20, 48);
+          doc.roundedRect(x + 3, cy - 5, w - 6, lineH, 2, 2, 'F');
+        }
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.6);
+        doc.setTextColor(169, 176, 214);
+        doc.text(normalizePdfText(label), x + 5, cy);
+
+        doc.setFont('helvetica', isMain ? 'bold' : 'normal');
+        doc.setFontSize(isMain ? 9.2 : 8.2);
+        doc.setTextColor(isMain ? 106 : 232, isMain ? 166 : 235, isMain ? 255 : 255);
+        doc.text(lines, x + 43, cy, { maxWidth: w - 48 });
+
+        cy += lineH;
+      });
+    }
+
+    function drawPdfImagePanel(doc, title, image, x, y, w, h) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.3);
+      doc.setTextColor(17, 22, 42);
+      doc.text(normalizePdfText(title), x, y + 4);
+
+      const panelY = y + 7;
+      const panelH = h - 7;
+      doc.setFillColor(17, 22, 42);
+      doc.roundedRect(x, panelY, w, panelH, 3, 3, 'F');
+      const inset = 1.6;
+      const imgBox = fitImageInBox(image.width, image.height, x + inset, panelY + inset, w - (inset * 2), panelH - (inset * 2));
+      doc.addImage(image.dataUrl, 'PNG', imgBox.x, imgBox.y, imgBox.w, imgBox.h, undefined, 'FAST');
+    }
+
+    function drawPdfTable(doc, columns, rows, x, y, colWidths, options = {}) {
+      const pageH = doc.internal.pageSize.getHeight();
+      const pageW = doc.internal.pageSize.getWidth();
+      const bottom = options.bottom ?? 12;
+      const title = options.title || '';
+      let cy = y;
+
+      const drawTitle = () => {
+        if (!title) return;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(17, 22, 42);
+        doc.text(normalizePdfText(title), x, cy);
+        cy += 6;
+      };
+
+      const drawHeader = () => {
+        doc.setFillColor(17, 22, 42);
+        doc.roundedRect(x, cy, colWidths.reduce((sum, width) => sum + width, 0), 8, 1.5, 1.5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.8);
+
+        let cx = x;
+        columns.forEach((col, idx) => {
+          doc.text(normalizePdfText(col), cx + 2, cy + 5.2, { maxWidth: colWidths[idx] - 4 });
+          cx += colWidths[idx];
+        });
+        cy += 8;
+      };
+
+      const newPage = () => {
+        doc.addPage('a4', 'landscape');
+        doc.setFillColor(246, 248, 252);
+        doc.rect(0, 0, pageW, pageH, 'F');
+        addPdfHeader(doc, `${PDF_TITLE} - Details`);
+        cy = 26;
+        drawHeader();
+      };
+
+      drawTitle();
+      drawHeader();
+
+      if (!rows.length) {
+        rows = [['-', 'No data', '', '', ''].slice(0, columns.length)];
+      }
+
+      rows.forEach((row, rowIdx) => {
+        const splitCells = row.map((cell, idx) => doc.splitTextToSize(normalizePdfText(cell), colWidths[idx] - 4));
+        const maxLines = Math.max(1, ...splitCells.map(lines => lines.length));
+        const rowH = Math.max(7, maxLines * 4 + 3);
+
+        if (cy + rowH > pageH - bottom) {
+          newPage();
+        }
+
+        doc.setFillColor(rowIdx % 2 === 0 ? 246 : 255, rowIdx % 2 === 0 ? 248 : 255, rowIdx % 2 === 0 ? 252 : 255);
+        doc.rect(x, cy, Math.min(pageW - x - 10, colWidths.reduce((sum, width) => sum + width, 0)), rowH, 'F');
+        doc.setDrawColor(224, 229, 242);
+        doc.line(x, cy + rowH, x + colWidths.reduce((sum, width) => sum + width, 0), cy + rowH);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.8);
+        doc.setTextColor(17, 22, 42);
+
+        let cx = x;
+        splitCells.forEach((lines, idx) => {
+          doc.text(lines, cx + 2, cy + 5, { maxWidth: colWidths[idx] - 4 });
+          cx += colWidths[idx];
+        });
+
+        cy += rowH;
+      });
+
+      return cy + 5;
+    }
+
+    function drawContainerSummaryLine(doc, bin, idx, y) {
+      const pageW = doc.internal.pageSize.getWidth();
+      const pallets = bin.items?.length || bin.placements?.length || 0;
+      const text = `Container ${idx + 1} | ${formatContainerType(bin.type)} | Pallets: ${pallets} | Fill: ${formatPdfNumber(fillRatio(bin) * 100, 1)}% | Status: ${getPdfStatusForBin(bin)}`;
+
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(10, y, pageW - 20, 8, 2, 2, 'F');
+      doc.setDrawColor(224, 229, 242);
+      doc.roundedRect(10, y, pageW - 20, 8, 2, 2, 'S');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.2);
+      doc.setTextColor(17, 22, 42);
+      doc.text(normalizePdfText(text), 14, y + 5.3, { maxWidth: pageW - 28 });
+    }
+
+    function addContainerViewPage(doc, capture, idx, timestamp) {
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.addPage('a4', 'landscape');
+      doc.setFillColor(246, 248, 252);
+      doc.rect(0, 0, pageW, pageH, 'F');
+      addPdfHeader(doc, `${PDF_TITLE} - Container ${idx + 1}`, `Exported ${timestamp}`);
+      drawContainerSummaryLine(doc, capture.bin, idx, 23);
+
+      drawPdfImagePanel(doc, '3D view', capture.threeD, 10, 34, 137, 78);
+      drawPdfImagePanel(doc, 'Top-down', capture.top, 150, 34, 137, 78);
+      drawPdfImagePanel(doc, 'Long side A', capture.sideA, 10, 116, 137, 78);
+      drawPdfImagePanel(doc, 'Long side B', capture.sideB, 150, 116, 137, 78);
+    }
+
+    async function exportReportPdf() {
+      const JsPDF = window.jspdf?.jsPDF;
+      if (!JsPDF) {
+        throw new Error('PDF library could not be loaded. Check the internet connection or add jsPDF locally.');
+      }
+
+      if (!lastRenderedSolution) {
+        update();
+        await nextFrame();
+      }
+
+      els.exportPdfBtn.disabled = true;
+      const originalText = els.exportPdfBtn.textContent;
+      els.exportPdfBtn.textContent = 'Creating PDF...';
+
+      const originalSolution = lastRenderedSolution ? cloneSolution(lastRenderedSolution) : null;
+      const originalManualSolution = manualSolution ? cloneSolution(manualSolution) : null;
+      const originalCameraState = getCameraState();
+
+      try {
+        const overview = await captureLockedCameraForPdf(originalSolution || lastRenderedSolution);
+        const exportSolution = originalSolution ? cloneSolution(originalSolution) : cloneSolution(lastRenderedSolution);
+        const containerCaptures = [];
+
+        for (let i = 0; i < (exportSolution?.bins?.length || 0); i++) {
+          const capture = await captureContainerViewsForPdf(exportSolution, i);
+          if (capture) containerCaptures.push(capture);
+        }
+
+        restoreSceneAfterPdfExport(originalSolution, originalCameraState, originalManualSolution);
+
+        const now = new Date();
+        const timestamp = formatPdfDisplayTimestamp(now);
+        const fileStamp = formatPdfFileTimestamp(now);
+        const doc = new JsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+        doc.setProperties?.({ title: PDF_TITLE, subject: PDF_TITLE });
+
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+
+        doc.setFillColor(246, 248, 252);
+        doc.rect(0, 0, pageW, pageH, 'F');
+        addPdfHeader(doc, PDF_TITLE, `Exported ${timestamp}`);
+
+        drawInfoPanel(doc, 10, 25, 78, getSummaryRowsForPdf(exportSolution));
+        drawPdfImagePanel(doc, 'Overview', overview, 94, 25, 193, 154);
+
+        doc.addPage('a4', 'landscape');
+        doc.setFillColor(246, 248, 252);
+        doc.rect(0, 0, pageW, pageH, 'F');
+        addPdfHeader(doc, `${PDF_TITLE} - Details`, `Exported ${timestamp}`);
+
+        let y = 28;
+        y = drawPdfTable(
+          doc,
+          ['Row', 'Count', 'Dimensions L x W x H (cm)', 'Weight', 'Rotation locked'],
+          getPalletRowsForPdf(),
+          10,
+          y,
+          [18, 25, 72, 32, 38],
+          { title: 'Pallet rows' }
+        );
+
+        y = drawPdfTable(
+          doc,
+          ['#', 'Equipment', 'Pallets', 'Fill rate', 'Status'],
+          getSolutionRowsForPdf(exportSolution),
+          10,
+          y + 4,
+          [18, 48, 32, 36, 70],
+          { title: 'Equipment in solution' }
+        );
+
+        const notes = getPdfNotesForSolution(exportSolution);
+        if (notes) {
+          if (y > 176) {
+            doc.addPage('a4', 'landscape');
+            doc.setFillColor(246, 248, 252);
+            doc.rect(0, 0, pageW, pageH, 'F');
+            addPdfHeader(doc, `${PDF_TITLE} - Notes`, `Exported ${timestamp}`);
+            y = 28;
+          }
+
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(10, y, 270, 18, 2, 2, 'F');
+          doc.setDrawColor(224, 229, 242);
+          doc.roundedRect(10, y, 270, 18, 2, 2, 'S');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(9);
+          doc.setTextColor(17, 22, 42);
+          doc.text('Notes', 15, y + 7);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(80, 88, 120);
+          doc.text(doc.splitTextToSize(notes, 215), 45, y + 7);
+        }
+
+        containerCaptures.forEach((capture, idx) => {
+          addContainerViewPage(doc, capture, idx, timestamp);
+        });
+
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          addPdfFooter(doc, i, pageCount);
+        }
+
+        doc.save(`loading-plan ${fileStamp}.pdf`);
+        els.importMsg.innerHTML = '<span class="success">PDF exported.</span>';
+      } finally {
+        restoreSceneAfterPdfExport(originalSolution, originalCameraState, originalManualSolution);
+        els.exportPdfBtn.disabled = false;
+        els.exportPdfBtn.textContent = originalText;
+      }
     }
 
     function runUpdate() {
