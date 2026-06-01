@@ -572,7 +572,7 @@
 
   <div class="sidebar">
     <h1>Eriks Pallpacknings-Kalkylator 3000</h1>
-    <div class="app-version">Extreme Point Heuristic // Version 7.1.0</div>
+    <div class="app-version">Extreme Point Heuristic // Version 7.2.3</div>
 
     <div class="input-panel">
       <div class="field">
@@ -957,6 +957,12 @@
     const PALLET_COLOR_B = 0x7bd89c;
     const PALLET_HOVER_COLOR = 0xffd166;
     const EXPORT_BACK_PANEL_COLOR = 0x45547a;
+    const EXPORT_BACK_PANEL_OPACITY = 0.7;
+    const PDF_EXPORT_TEXT_SCALE = 1.35;
+    const PDF_EXPORT_CONTAINER_DIMENSION_TEXT_SCALE = 2.3;
+    const PDF_EXPORT_CONTAINER_DIMENSION_FONT_SIZE = 48;
+    const PDF_EXPORT_DOOR_DIMENSION_TEXT_SCALE = 2.3;
+    const PDF_EXPORT_DOOR_DIMENSION_FONT_SIZE = 48;
     const DRAG_START_DISTANCE_PX = 5;
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
@@ -1035,7 +1041,7 @@
       autoFitCamera();
     });
 
-    function createTextLabel(text, color = '#a9b0d6', scaleX = 350, scaleY = 45) {
+    function createTextLabel(text, color = '#a9b0d6', scaleX = 350, scaleY = 45, options = {}) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = 1024;
@@ -1044,10 +1050,13 @@
       ctx.fillStyle = 'rgba(0,0,0,0)';
       ctx.fillRect(0, 0, 1024, 128);
 
-      ctx.font = 'bold 32px sans-serif';
+      const fontSize = Number.isFinite(options.fontSize) ? options.fontSize : 32;
+      const textY = Number.isFinite(options.textY) ? options.textY : Math.min(canvas.height - 12, fontSize + 10);
+
+      ctx.font = `bold ${fontSize}px sans-serif`;
       ctx.fillStyle = color;
       ctx.textAlign = 'left';
-      ctx.fillText(text, 10, 42);
+      ctx.fillText(text, 10, textY);
 
       const texture = new THREE.CanvasTexture(canvas);
       const material = new THREE.SpriteMaterial({
@@ -1058,6 +1067,14 @@
       });
       const sprite = new THREE.Sprite(material);
       sprite.renderOrder = 80;
+      sprite.userData = {
+        ...sprite.userData,
+        kind: 'textLabel',
+        pdfAvoidOverlap: options.pdfAvoidOverlap !== false,
+        pdfLabelPriority: Number.isFinite(options.pdfLabelPriority) ? options.pdfLabelPriority : 50,
+        pdfLabelRole: options.pdfLabelRole || 'label',
+        pdfLabelPadding: Number.isFinite(options.pdfLabelPadding) ? options.pdfLabelPadding : 6
+      };
       sprite.scale.set(scaleX, scaleY, 1);
       return sprite;
     }
@@ -2773,7 +2790,7 @@
       return line;
     }
 
-    function addDoorDimensionLines(group, box) {
+    function addDoorDimensionLines(group, box, options = {}) {
       if (box.noDoor) {
         return;
       }
@@ -2788,6 +2805,14 @@
       const zDim = zRight + 20;
       const yDim = Math.min(doorH + 16, box.H + 16);
       const tick = 12;
+      const labelScale = options.labelScaleMultiplier || 1;
+      const labelOptions = {
+        fontSize: options.labelFontSize || 32,
+        pdfAvoidOverlap: Boolean(options.pdfAvoidOverlap),
+        pdfLabelPriority: options.pdfLabelPriority || 35,
+        pdfLabelRole: 'door-dimension',
+        pdfLabelPadding: options.pdfLabelPadding || 8
+      };
 
       const doorMat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
       const dimMat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
@@ -2835,17 +2860,17 @@
         new THREE.Vector3(x, yDim + tick, zRight)
       ], dimMat);
 
-      const heightLabel = createTextLabel(`Door H ${doorH} cm`, '#ffb86b', 190, 28);
-      heightLabel.position.set(x - 4, doorH / 2, zDim + 12);
+      const heightLabel = createTextLabel(`Door H ${doorH} cm`, '#ffb86b', 190 * labelScale, 28 * labelScale, labelOptions);
+      heightLabel.position.set(x - 4, doorH / 2, zDim + (12 * labelScale));
       group.add(heightLabel);
 
-      const widthLabel = createTextLabel(`Door W ${doorW} cm`, '#ffb86b', 190, 28);
-      widthLabel.position.set(x - 4, yDim + 12, zLeft + 10);
+      const widthLabel = createTextLabel(`Door W ${doorW} cm`, '#ffb86b', 190 * labelScale, 28 * labelScale, labelOptions);
+      widthLabel.position.set(x - 4, yDim + (12 * labelScale), zLeft + 10);
       group.add(widthLabel);
     }
 
 
-    function addContainerDimensionLines(group, box) {
+    function addContainerDimensionLines(group, box, options = {}) {
       const mat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
       const xLeft = -box.L / 2;
       const xRight = box.L / 2;
@@ -2854,6 +2879,14 @@
       const y = Math.max(8, box.H * 0.035);
       const offset = 26;
       const tick = 10;
+      const labelScale = options.labelScaleMultiplier || 1;
+      const labelOptions = {
+        fontSize: options.labelFontSize || 32,
+        pdfAvoidOverlap: Boolean(options.pdfAvoidOverlap),
+        pdfLabelPriority: options.pdfLabelPriority || 30,
+        pdfLabelRole: 'container-dimension',
+        pdfLabelPadding: options.pdfLabelPadding || 8
+      };
 
       addLineToGroup(group, [
         new THREE.Vector3(xLeft, y, zFront + offset),
@@ -2894,20 +2927,20 @@
         new THREE.Vector3(xLeft - offset + tick, box.H, zFront + offset)
       ], mat);
 
-      const lengthLabel = createTextLabel(`L ${box.L} cm`, '#ffb86b', 160, 26);
-      lengthLabel.position.set(xLeft + Math.min(box.L * 0.36, 360), y + 18, zFront + offset + 12);
+      const lengthLabel = createTextLabel(`L ${box.L} cm`, '#ffb86b', 160 * labelScale, 26 * labelScale, labelOptions);
+      lengthLabel.position.set(xLeft + Math.min(box.L * 0.36, 360), y + (18 * labelScale), zFront + offset + (12 * labelScale));
       group.add(lengthLabel);
 
-      const widthLabel = createTextLabel(`W ${box.W} cm`, '#ffb86b', 150, 26);
-      widthLabel.position.set(xRight + offset + 10, y + 18, zBack + 8);
+      const widthLabel = createTextLabel(`W ${box.W} cm`, '#ffb86b', 150 * labelScale, 26 * labelScale, labelOptions);
+      widthLabel.position.set(xRight + offset + (10 * labelScale), y + (18 * labelScale), zBack + 8);
       group.add(widthLabel);
 
-      const heightLabel = createTextLabel(`H ${box.H} cm`, '#ffb86b', 150, 26);
-      heightLabel.position.set(xLeft - offset - 4, box.H * 0.5, zFront + offset + 12);
+      const heightLabel = createTextLabel(`H ${box.H} cm`, '#ffb86b', 150 * labelScale, 26 * labelScale, labelOptions);
+      heightLabel.position.set(xLeft - offset - 4, box.H * 0.5, zFront + offset + (12 * labelScale));
       group.add(heightLabel);
     }
 
-    function addTopOpeningLines(group, box) {
+    function addTopOpeningLines(group, box, options = {}) {
       if (!box.topLoad || !box.roofOpenL || !box.roofOpenW) return;
 
       const openL = Math.min(box.roofOpenL, box.L);
@@ -2919,6 +2952,14 @@
       const zFront = openW / 2;
 
       const mat = new THREE.LineBasicMaterial({ color: 0xffb86b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
+      const labelScale = options.labelScaleMultiplier || 1;
+      const labelOptions = {
+        fontSize: options.labelFontSize || 32,
+        pdfAvoidOverlap: Boolean(options.pdfAvoidOverlap),
+        pdfLabelPriority: options.pdfLabelPriority || 35,
+        pdfLabelRole: 'top-dimension',
+        pdfLabelPadding: options.pdfLabelPadding || 8
+      };
 
       addLineToGroup(group, [
         new THREE.Vector3(xLeft, y, zBack),
@@ -2928,8 +2969,8 @@
         new THREE.Vector3(xLeft, y, zBack)
       ], mat);
 
-      const label = createTextLabel(`Top ${openL}x${openW} cm`, '#ffb86b', 210, 28);
-      label.position.set(xLeft, y + 22, zBack);
+      const label = createTextLabel(`Top ${openL}x${openW} cm`, '#ffb86b', 210 * labelScale, 28 * labelScale, labelOptions);
+      label.position.set(xLeft, y + (22 * labelScale), zBack);
       group.add(label);
     }
 
@@ -3004,11 +3045,6 @@
       const yStubTop = yBase + Math.max(10, box.H * 0.10);
 
       [zBack, zFront].forEach(z => {
-        addLineToGroup(group, [
-          new THREE.Vector3(xLeft, yBase, z),
-          new THREE.Vector3(xRight, yBase, z)
-        ], mat);
-
         addLineToGroup(group, [
           new THREE.Vector3(xLeft, yBase, z),
           new THREE.Vector3(xLeft, yStubTop, z)
@@ -3381,8 +3417,9 @@
       return new THREE.MeshBasicMaterial({
         color: EXPORT_BACK_PANEL_COLOR,
         side: THREE.DoubleSide,
-        transparent: false,
-        depthWrite: true
+        transparent: true,
+        opacity: EXPORT_BACK_PANEL_OPACITY,
+        depthWrite: false
       });
     }
 
@@ -3446,6 +3483,45 @@
       addLongBack();
     }
 
+    function createContainerOutlineLines(box) {
+      const material = new THREE.LineBasicMaterial({ color: 0x3d4c70 });
+
+      if (!box?.flatRack) {
+        const boxGeo = new THREE.BoxGeometry(box.L, box.H, box.W);
+        const line = new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), material);
+        line.position.y = box.H / 2;
+        return line;
+      }
+
+      const xLeft = -box.L / 2;
+      const xRight = box.L / 2;
+      const zBack = -box.W / 2;
+      const zFront = box.W / 2;
+      const yBottom = 0;
+      const yTop = box.H;
+      const points = [];
+      const addSegment = (a, b) => {
+        points.push(a, b);
+      };
+
+      // Bottom deck outline.
+      addSegment(new THREE.Vector3(xLeft, yBottom, zBack), new THREE.Vector3(xRight, yBottom, zBack));
+      addSegment(new THREE.Vector3(xRight, yBottom, zBack), new THREE.Vector3(xRight, yBottom, zFront));
+      addSegment(new THREE.Vector3(xRight, yBottom, zFront), new THREE.Vector3(xLeft, yBottom, zFront));
+      addSegment(new THREE.Vector3(xLeft, yBottom, zFront), new THREE.Vector3(xLeft, yBottom, zBack));
+
+      // End posts and end-wall top edges. The two long top side rails are intentionally omitted for flat racks.
+      addSegment(new THREE.Vector3(xLeft, yBottom, zBack), new THREE.Vector3(xLeft, yTop, zBack));
+      addSegment(new THREE.Vector3(xLeft, yBottom, zFront), new THREE.Vector3(xLeft, yTop, zFront));
+      addSegment(new THREE.Vector3(xRight, yBottom, zBack), new THREE.Vector3(xRight, yTop, zBack));
+      addSegment(new THREE.Vector3(xRight, yBottom, zFront), new THREE.Vector3(xRight, yTop, zFront));
+      addSegment(new THREE.Vector3(xLeft, yTop, zBack), new THREE.Vector3(xLeft, yTop, zFront));
+      addSegment(new THREE.Vector3(xRight, yTop, zBack), new THREE.Vector3(xRight, yTop, zFront));
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      return new THREE.LineSegments(geometry, material);
+    }
+
     function build3DSceneFromSolution(solution, options = {}) {
       const {
         interactive = true,
@@ -3457,6 +3533,33 @@
       } = options;
 
       solution = centerFlatRackSolutionPlacementsAlongLength(cloneSolution(solution));
+      const pdfTextScale = showExportBackPanels ? PDF_EXPORT_TEXT_SCALE : 1;
+      const dimensionLabelOptions = showExportBackPanels
+        ? {
+            labelScaleMultiplier: PDF_EXPORT_TEXT_SCALE,
+            pdfAvoidOverlap: true,
+            pdfLabelPriority: 35,
+            pdfLabelPadding: 8
+          }
+        : {};
+      const doorDimensionLabelOptions = showExportBackPanels
+        ? {
+            labelScaleMultiplier: PDF_EXPORT_DOOR_DIMENSION_TEXT_SCALE,
+            labelFontSize: PDF_EXPORT_DOOR_DIMENSION_FONT_SIZE,
+            pdfAvoidOverlap: true,
+            pdfLabelPriority: 34,
+            pdfLabelPadding: 10
+          }
+        : {};
+      const containerDimensionLabelOptions = showExportBackPanels
+        ? {
+            labelScaleMultiplier: PDF_EXPORT_CONTAINER_DIMENSION_TEXT_SCALE,
+            labelFontSize: PDF_EXPORT_CONTAINER_DIMENSION_FONT_SIZE,
+            pdfAvoidOverlap: true,
+            pdfLabelPriority: 32,
+            pdfLabelPadding: 10
+          }
+        : {};
 
       clearSceneGroup();
       interactivePalletMeshes = [];
@@ -3483,13 +3586,18 @@
 
         if (showLabels) {
           const labelText = `${formatContainerType(bin.type)}${bin.visualOnly ? ' - height warning' : ''} (${box.L} x ${box.W} x ${box.H} cm)`;
-          const labelScaleX = showExportBackPanels ? Math.min(660, Math.max(500, box.L * 0.44)) : 350;
-          const labelScaleY = showExportBackPanels ? 58 : 45;
-          const label = createTextLabel(labelText, showExportBackPanels ? '#ffffff' : '#a9b0d6', labelScaleX, labelScaleY);
+          const labelScaleX = showExportBackPanels ? (Math.min(660, Math.max(500, box.L * 0.44)) * pdfTextScale) : 350;
+          const labelScaleY = showExportBackPanels ? (58 * pdfTextScale) : 45;
+          const label = createTextLabel(labelText, showExportBackPanels ? '#ffffff' : '#a9b0d6', labelScaleX, labelScaleY, {
+            pdfAvoidOverlap: showExportBackPanels,
+            pdfLabelPriority: 12,
+            pdfLabelRole: 'container-title',
+            pdfLabelPadding: 10
+          });
           label.position.set(
-            showExportBackPanels ? (-box.L / 2) + (labelScaleX / 2) + 12 : -box.L / 2,
-            box.H + (showExportBackPanels ? 58 : 40),
-            showExportBackPanels ? (box.W / 2) + 22 : -box.W / 2
+            showExportBackPanels ? (-box.L / 2) + (labelScaleX / 2) + (12 * pdfTextScale) : -box.L / 2,
+            box.H + (showExportBackPanels ? (58 * pdfTextScale) : 40),
+            showExportBackPanels ? (box.W / 2) + (22 * pdfTextScale) : -box.W / 2
           );
           group.add(label);
         }
@@ -3506,12 +3614,7 @@
           addExportBackPanels(group, box, exportPanelView);
         }
 
-        const boxGeo = new THREE.BoxGeometry(box.L, box.H, box.W);
-        const line = new THREE.LineSegments(
-          new THREE.EdgesGeometry(boxGeo),
-          new THREE.LineBasicMaterial({ color: 0x3d4c70 })
-        );
-        line.position.y = box.H / 2;
+        const line = createContainerOutlineLines(box);
         group.add(line);
 
         if (binHasHeightWarning(bin)) {
@@ -3523,9 +3626,9 @@
         }
 
         if (showDimensionGuides) {
-          if (showExportBackPanels) addContainerDimensionLines(group, box);
-          addDoorDimensionLines(group, box);
-          addTopOpeningLines(group, box);
+          if (showExportBackPanels) addContainerDimensionLines(group, box, containerDimensionLabelOptions);
+          addDoorDimensionLines(group, box, doorDimensionLabelOptions);
+          addTopOpeningLines(group, box, dimensionLabelOptions);
         }
 
         const matA = new THREE.MeshLambertMaterial({ color: PALLET_COLOR_A });
@@ -5394,15 +5497,10 @@
         });
       }
 
-      freeCam = false;
-      controls.enabled = false;
-      updateCameraToggleUi();
-      autoFitCamera(true);
-      controls.update();
-
       await nextFrame();
-      renderer.render(scene, camera);
-      const image = makeRendererSnapshotDataUrl();
+      const overviewBounds = getMainGroupBoundsForPdf({ ignoreTextLabels: true });
+      overviewBounds.expandByScalar(160);
+      const image = captureCurrentPdfSceneView('3d', overviewBounds);
 
       restoreCameraState(previous);
       renderer.render(scene, camera);
@@ -5617,10 +5715,224 @@
       return bounds;
     }
 
+    function getPdfLabelLayoutContext(viewCamera) {
+      const width = Math.max(1, renderer.domElement.width || 1);
+      const height = Math.max(1, renderer.domElement.height || 1);
+      const worldWidth = Math.max(1e-6, Math.abs(viewCamera.right - viewCamera.left));
+      const worldHeight = Math.max(1e-6, Math.abs(viewCamera.top - viewCamera.bottom));
+
+      return {
+        width,
+        height,
+        worldUnitsPerPixelX: worldWidth / width,
+        worldUnitsPerPixelY: worldHeight / height,
+        right: new THREE.Vector3().setFromMatrixColumn(viewCamera.matrixWorld, 0).normalize(),
+        up: new THREE.Vector3().setFromMatrixColumn(viewCamera.matrixWorld, 1).normalize(),
+        margin: 22,
+        gap: 10
+      };
+    }
+
+    function getPdfTextLabelsForOverlapAvoidance() {
+      const labels = [];
+
+      mainGroup.traverse(object => {
+        if (!object.visible || !object.isSprite || object.userData?.kind !== 'textLabel') return;
+        if (object.userData?.pdfAvoidOverlap === false) return;
+
+        if (!object.userData.pdfOriginalLocalPosition) {
+          object.userData.pdfOriginalLocalPosition = object.position.clone();
+        } else {
+          object.position.copy(object.userData.pdfOriginalLocalPosition);
+        }
+
+        labels.push(object);
+      });
+
+      mainGroup.updateMatrixWorld(true);
+      return labels;
+    }
+
+    function getPdfLabelRect(sprite, viewCamera, layout) {
+      const worldPos = new THREE.Vector3();
+      sprite.getWorldPosition(worldPos);
+      const ndc = worldPos.clone().project(viewCamera);
+      const centerX = ((ndc.x * 0.5) + 0.5) * layout.width;
+      const centerY = ((-ndc.y * 0.5) + 0.5) * layout.height;
+      const width = Math.min(layout.width - (layout.margin * 2), Math.max(24, Math.abs(sprite.scale.x) / layout.worldUnitsPerPixelX));
+      const height = Math.min(layout.height - (layout.margin * 2), Math.max(14, Math.abs(sprite.scale.y) / layout.worldUnitsPerPixelY));
+      const padding = Number.isFinite(sprite.userData?.pdfLabelPadding) ? sprite.userData.pdfLabelPadding : 6;
+
+      return {
+        sprite,
+        centerX,
+        centerY,
+        width,
+        height,
+        left: centerX - (width / 2) - padding,
+        right: centerX + (width / 2) + padding,
+        top: centerY - (height / 2) - padding,
+        bottom: centerY + (height / 2) + padding,
+        priority: Number.isFinite(sprite.userData?.pdfLabelPriority) ? sprite.userData.pdfLabelPriority : 50,
+        padding
+      };
+    }
+
+    function rectsOverlap(a, b) {
+      return !(
+        a.right <= b.left ||
+        a.left >= b.right ||
+        a.bottom <= b.top ||
+        a.top >= b.bottom
+      );
+    }
+
+    function movePdfLabelByScreenPixels(sprite, dx, dy, layout) {
+      if (!dx && !dy) return;
+
+      const worldDelta = layout.right.clone().multiplyScalar(dx * layout.worldUnitsPerPixelX)
+        .add(layout.up.clone().multiplyScalar(-dy * layout.worldUnitsPerPixelY));
+      const worldPos = new THREE.Vector3();
+      sprite.getWorldPosition(worldPos);
+      worldPos.add(worldDelta);
+
+      if (sprite.parent) {
+        sprite.parent.worldToLocal(worldPos);
+      }
+
+      sprite.position.copy(worldPos);
+      sprite.updateMatrixWorld(true);
+      mainGroup.updateMatrixWorld(true);
+    }
+
+    function centerRectAt(rect, centerX, centerY) {
+      return {
+        ...rect,
+        centerX,
+        centerY,
+        left: centerX - (rect.width / 2) - rect.padding,
+        right: centerX + (rect.width / 2) + rect.padding,
+        top: centerY - (rect.height / 2) - rect.padding,
+        bottom: centerY + (rect.height / 2) + rect.padding
+      };
+    }
+
+    function clampPdfLabelCenter(rect, x, y, layout) {
+      const minX = layout.margin + rect.padding + (rect.width / 2);
+      const maxX = layout.width - layout.margin - rect.padding - (rect.width / 2);
+      const minY = layout.margin + rect.padding + (rect.height / 2);
+      const maxY = layout.height - layout.margin - rect.padding - (rect.height / 2);
+
+      return {
+        x: clamp(x, Math.min(minX, maxX), Math.max(minX, maxX)),
+        y: clamp(y, Math.min(minY, maxY), Math.max(minY, maxY))
+      };
+    }
+
+    function getPdfLabelCandidateCenters(rect, layout) {
+      const candidates = [];
+      const seen = new Set();
+      const stepX = Math.max(rect.width + (layout.gap * 2), 80);
+      const stepY = Math.max(rect.height + (layout.gap * 2), 42);
+      const push = (x, y) => {
+        const clamped = clampPdfLabelCenter(rect, x, y, layout);
+        const key = `${Math.round(clamped.x)}|${Math.round(clamped.y)}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        candidates.push(clamped);
+      };
+
+      for (let radius = 0; radius <= 8; radius++) {
+        const offsets = radius === 0
+          ? [[0, 0]]
+          : [
+              [0, -radius],
+              [0, radius],
+              [-radius, 0],
+              [radius, 0],
+              [-radius, -radius],
+              [radius, -radius],
+              [-radius, radius],
+              [radius, radius]
+            ];
+
+        offsets.forEach(([ox, oy]) => push(rect.centerX + (ox * stepX), rect.centerY + (oy * stepY)));
+      }
+
+      for (let y = layout.margin + rect.padding + (rect.height / 2); y <= layout.height - layout.margin - rect.padding - (rect.height / 2); y += stepY) {
+        for (let x = layout.margin + rect.padding + (rect.width / 2); x <= layout.width - layout.margin - rect.padding - (rect.width / 2); x += Math.max(stepX * 0.55, 70)) {
+          push(x, y);
+        }
+      }
+
+      candidates.sort((a, b) => {
+        const da = ((a.x - rect.centerX) ** 2) + ((a.y - rect.centerY) ** 2);
+        const db = ((b.x - rect.centerX) ** 2) + ((b.y - rect.centerY) ** 2);
+        return da - db;
+      });
+
+      return candidates;
+    }
+
+    function findNonOverlappingPdfLabelCenter(rect, placedRects, layout) {
+      const candidates = getPdfLabelCandidateCenters(rect, layout);
+      let bestFallback = null;
+      let bestOverlapArea = Infinity;
+
+      for (const candidate of candidates) {
+        const candidateRect = centerRectAt(rect, candidate.x, candidate.y);
+        const overlaps = placedRects.filter(placed => rectsOverlap(candidateRect, placed));
+
+        if (!overlaps.length) {
+          return candidate;
+        }
+
+        const overlapArea = overlaps.reduce((sum, placed) => {
+          const overlapW = Math.max(0, Math.min(candidateRect.right, placed.right) - Math.max(candidateRect.left, placed.left));
+          const overlapH = Math.max(0, Math.min(candidateRect.bottom, placed.bottom) - Math.max(candidateRect.top, placed.top));
+          return sum + (overlapW * overlapH);
+        }, 0);
+
+        if (overlapArea < bestOverlapArea) {
+          bestOverlapArea = overlapArea;
+          bestFallback = candidate;
+        }
+      }
+
+      return bestFallback || clampPdfLabelCenter(rect, rect.centerX, rect.centerY, layout);
+    }
+
+    function resolvePdfLabelOverlaps(viewCamera) {
+      if (!viewCamera?.isOrthographicCamera) return;
+
+      viewCamera.updateMatrixWorld(true);
+      const layout = getPdfLabelLayoutContext(viewCamera);
+      const labels = getPdfTextLabelsForOverlapAvoidance();
+      if (labels.length < 2) return;
+
+      const ordered = labels
+        .map(label => getPdfLabelRect(label, viewCamera, layout))
+        .sort((a, b) => a.priority - b.priority || a.top - b.top || a.left - b.left);
+      const placedRects = [];
+
+      ordered.forEach(initialRect => {
+        const target = findNonOverlappingPdfLabelCenter(initialRect, placedRects, layout);
+        movePdfLabelByScreenPixels(
+          initialRect.sprite,
+          target.x - initialRect.centerX,
+          target.y - initialRect.centerY,
+          layout
+        );
+
+        placedRects.push(getPdfLabelRect(initialRect.sprite, viewCamera, layout));
+      });
+    }
+
     function captureCurrentPdfSceneView(view, boundsOverride = null) {
       return withPdfRendererSize(() => {
         const bounds = boundsOverride || getMainGroupBoundsForPdf();
         const viewCamera = createPdfCameraForView(view, bounds);
+        resolvePdfLabelOverlaps(viewCamera);
         renderer.render(scene, viewCamera);
         return makeRendererSnapshotDataUrl();
       });
@@ -5703,14 +6015,14 @@
       if (title) {
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
+        doc.setFontSize(14.5);
         doc.text(normalizePdfText(title), logo ? 56 : 10, 11.5);
       }
 
       if (subtitle) {
         doc.setTextColor(169, 176, 214);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(9);
         doc.text(normalizePdfText(subtitle), pageW - 10, 11.5, { align: 'right' });
       }
     }
@@ -5719,7 +6031,7 @@
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.2);
+      doc.setFontSize(8);
       doc.setTextColor(128, 138, 170);
       doc.text(`Page ${pageNumber} of ${pageCount}`, pageW - 10, pageH - 8, { align: 'right' });
     }
@@ -5731,17 +6043,17 @@
       doc.roundedRect(x, y, w, 154, 3, 3, 'S');
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(12.5);
       doc.setTextColor(255, 255, 255);
       doc.text('Summary', x + 5, y + 8);
 
       let cy = y + 17;
       rows.forEach(([label, value], idx) => {
         const isMain = idx === 0;
-        const rowH = isMain ? 12 : 9.2;
+        const rowH = isMain ? 13 : 10;
         const safeValue = normalizePdfText(value || '-');
         const lines = doc.splitTextToSize(safeValue, w - 45);
-        const lineH = Math.max(rowH, lines.length * 4.1 + 3);
+        const lineH = Math.max(rowH, lines.length * 4.6 + 3);
 
         if (cy + lineH > y + 149) return;
 
@@ -5751,12 +6063,12 @@
         }
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.6);
+        doc.setFontSize(8.4);
         doc.setTextColor(169, 176, 214);
         doc.text(normalizePdfText(label), x + 5, cy);
 
         doc.setFont('helvetica', isMain ? 'bold' : 'normal');
-        doc.setFontSize(isMain ? 9.2 : 8.2);
+        doc.setFontSize(isMain ? 10.4 : 9.2);
         doc.setTextColor(isMain ? 106 : 232, isMain ? 166 : 235, isMain ? 255 : 255);
         doc.text(lines, x + 43, cy, { maxWidth: w - 48 });
 
@@ -5766,7 +6078,7 @@
 
     function drawPdfImagePanel(doc, title, image, x, y, w, h) {
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9.3);
+      doc.setFontSize(10.5);
       doc.setTextColor(17, 22, 42);
       doc.text(normalizePdfText(title), x, y + 4);
 
@@ -5789,7 +6101,7 @@
       const drawTitle = () => {
         if (!title) return;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFontSize(12);
         doc.setTextColor(17, 22, 42);
         doc.text(normalizePdfText(title), x, cy);
         cy += 6;
@@ -5800,7 +6112,7 @@
         doc.roundedRect(x, cy, colWidths.reduce((sum, width) => sum + width, 0), 8, 1.5, 1.5, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.8);
+        doc.setFontSize(8.6);
 
         let cx = x;
         columns.forEach((col, idx) => {
@@ -5829,7 +6141,7 @@
       rows.forEach((row, rowIdx) => {
         const splitCells = row.map((cell, idx) => doc.splitTextToSize(normalizePdfText(cell), colWidths[idx] - 4));
         const maxLines = Math.max(1, ...splitCells.map(lines => lines.length));
-        const rowH = Math.max(7, maxLines * 4 + 3);
+        const rowH = Math.max(8, maxLines * 4.4 + 3);
 
         if (cy + rowH > pageH - bottom) {
           newPage();
@@ -5841,7 +6153,7 @@
         doc.line(x, cy + rowH, x + colWidths.reduce((sum, width) => sum + width, 0), cy + rowH);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.8);
+        doc.setFontSize(8.5);
         doc.setTextColor(17, 22, 42);
 
         let cx = x;
@@ -5862,13 +6174,13 @@
       const text = `Container ${idx + 1} | ${formatContainerType(bin.type)} | Pallets: ${pallets} | Fill: ${formatPdfNumber(fillRatio(bin) * 100, 1)}% | Status: ${getPdfStatusForBin(bin)}`;
 
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(10, y, pageW - 20, 8, 2, 2, 'F');
+      doc.roundedRect(10, y, pageW - 20, 10, 2, 2, 'F');
       doc.setDrawColor(224, 229, 242);
-      doc.roundedRect(10, y, pageW - 20, 8, 2, 2, 'S');
+      doc.roundedRect(10, y, pageW - 20, 10, 2, 2, 'S');
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.2);
+      doc.setFontSize(9.4);
       doc.setTextColor(17, 22, 42);
-      doc.text(normalizePdfText(text), 14, y + 5.3, { maxWidth: pageW - 28 });
+      doc.text(normalizePdfText(text), 14, y + 6.4, { maxWidth: pageW - 28 });
     }
 
     function addContainerViewPage(doc, capture, idx, timestamp) {
@@ -5957,7 +6269,7 @@
           10,
           y + 4,
           [18, 48, 32, 36, 70],
-          { title: 'Equipment in solution' }
+          { title: 'Equipment' }
         );
 
         const notes = getPdfNotesForSolution(exportSolution);
